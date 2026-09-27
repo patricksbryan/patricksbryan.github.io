@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#1b2a4a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Snack Crawl London</title>
-<meta property="og:title" content="Snack Crawl: London 🇬🇧">
+<title>Kara &amp; Bryce's London Adventure</title>
+<meta property="og:title" content="Kara &amp; Bryce's London Adventure 🇬🇧">
 <meta property="og:description" content="Two hungry people, one big city, 60 seconds. How much can you eat?">
 <style>
   html,body{margin:0;height:100%;background:#1b2a4a;overflow:hidden;overscroll-behavior:none;touch-action:none;
@@ -17,6 +17,7 @@
     justify-content:space-between;pointer-events:none;gap:8px}
   .pill{background:rgba(20,30,55,.82);color:#fff;border-radius:999px;padding:7px 14px;font-weight:800;font-size:18px;
     font-variant-numeric:tabular-nums;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  #tipsy{background:#e0a800;color:#1b2a4a;animation:pulse .6s infinite alternate}
   #time.low{background:#d62828;animation:pulse .5s infinite alternate}
   @keyframes pulse{to{transform:scale(1.08)}}
   #crave{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 56px);
@@ -50,21 +51,25 @@
 
 <div id="hud" class="hidden">
   <div class="pill" id="time">⏱ 60</div>
+  <div class="pill hidden" id="tipsy">🍺 Tipsy!</div>
   <div class="pill" id="score">⭐ 0</div>
 </div>
-<div id="crave" class="hidden"><span id="craveE">🍟</span><div><small>Your +1 is craving</small><b id="craveN">Fish &amp; Chips</b></div></div>
+<div id="crave" class="hidden"><span id="craveE">🍟</span><div><small id="craveL">Craving</small><b id="craveN">Fish &amp; Chips</b></div></div>
 
 <div id="title" class="overlay">
   <div class="card">
-    <h1>Snack Crawl <em>London</em></h1>
+    <h1>Kara &amp; Bryce's <em>London Adventure</em></h1>
     <p class="sub">Two hungry people. One big city. 60 seconds.</p>
     <ul class="rules">
       <li><span>👆</span><span>Drag anywhere to walk (arrow keys on a computer)</span></li>
-      <li><span>🎯</span><span>Follow the <b>gold arrow</b> to whatever your +1 is craving for big points</span></li>
+      <li><span>🎯</span><span>Follow the <b>gold arrow</b> to whatever your travel buddy is craving for big points</span></li>
       <li><span>🍩</span><span>Every snack you grab adds time on the clock</span></li>
       <li><span>🚌</span><span>Mind the buses &amp; black cabs!</span></li>
+      <li><span>🍺</span><span>Grab a pint and you'll stumble sideways for a bit!</span></li>
     </ul>
-    <button id="startBtn">Let's eat! 🍽️</button>
+    <p class="sub"><b>Who are you playing as?</b></p>
+    <button id="startKara">Play as Kara</button>
+    <button id="startBryce" class="alt">Play as Bryce</button>
     <div class="best" id="bestT"></div>
   </div>
 </div>
@@ -396,13 +401,14 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 
 const START = { x: 21 * T, y: 13 * T };
+let me = 'Kara', them = 'Bryce';
 let state = 'title', clock = 0, left = GAME_TIME, score = 0, eaten = [];
 let p1, p2, trail, stands, crave, vehicles, pigeons, floaters, bubble;
 let best = 0;
 try { best = +localStorage.getItem('snackcrawl-best') || 0; } catch (e) {}
 
 function reset() {
-  p1 = { x: START.x, y: START.y, stun: 0, inv: 0, kx: 0, ky: 0, phase: 0, moving: false };
+  p1 = { x: START.x, y: START.y, stun: 0, inv: 0, kx: 0, ky: 0, phase: 0, moving: false, drunk: 0, pints: 0, lurch: 0 };
   p2 = { x: START.x - 30, y: START.y, phase: 0, moving: false };
   trail = [{ x: START.x - 30, y: START.y }, { x: START.x, y: START.y }];
   left = GAME_TIME; score = 0; eaten = []; floaters = []; bubble = null;
@@ -430,7 +436,8 @@ function addVehicle(dx, dy, x, y) {
 function spawnStand(minDist = 350) {
   const used = new Set(stands.map(s => s.food));
   const choices = FOODS.filter(f => !used.has(f));
-  const food = pick(choices);
+  const pint = FOODS.find(f => f[0] === '🍺');
+  const food = (!used.has(pint) && Math.random() < .3) ? pint : pick(choices);
   for (let tries = 0; tries < 400; tries++) {
     const t = pick(spawnTiles), x = (t % N + .5) * T, y = ((t / N) | 0) * T + T / 2;
     const pt = { x, y };
@@ -522,6 +529,24 @@ function update(dt) {
   }
   if (p1.stun > 0) { p1.stun -= dt; ix = iy = 0; }
   if (p1.inv > 0) p1.inv -= dt;
+  if (p1.drunk > 0) {
+    p1.drunk -= dt;
+    if (p1.drunk <= 0) { p1.drunk = 0; p1.pints = 0; if (state === 'play') say(pick(["Right, I'm sober now", 'Head feels clearer!'])); }
+    else if (state === 'play' && p1.stun <= 0) {
+      // sway sideways relative to where you're heading (left/right if standing still)
+      const lvl = Math.min(3, p1.pints), l = Math.hypot(ix, iy);
+      const px = l > .1 ? -iy / l : 1, py = l > .1 ? ix / l : 0;
+      const sway = Math.sin(clock * 3.3) * (.55 + .25 * lvl) * (l > .1 ? l : .35);
+      ix += px * sway; iy += py * sway;
+      p1.lurch -= dt;
+      if (p1.lurch <= 0) {
+        p1.lurch = rand(.9, 1.8) / lvl;
+        const dir = Math.random() < .5 ? -1 : 1, f = 110 + 40 * lvl;
+        p1.kx += px * dir * f; p1.ky += py * dir * f;
+        if (Math.random() < .6) floater(p1.x, p1.y - 34, pick(['hic!', '*hic*', 'whoops!']), '#ffd23f');
+      }
+    }
+  }
 
   const SPEED = 180;
   let mvx = ix * SPEED + p1.kx, mvy = iy * SPEED + p1.ky;
@@ -572,7 +597,11 @@ function update(dt) {
         if (isCrave) { beep(660, .1, 'triangle', .08); setTimeout(() => beep(880, .1, 'triangle', .08), 90); setTimeout(() => beep(1320, .18, 'triangle', .08), 180); }
         else { beep(520, .08, 'triangle', .07); setTimeout(() => beep(780, .12, 'triangle', .07), 80); }
         stands[i] = spawnStand();
-        if (isCrave) newCrave();
+        if (s.food[0] === '🍺') {
+          p1.pints++; p1.drunk = 8; p1.lurch = .4;
+          say(pick(['Cheers! 🍻', 'Steady on!', 'Just the one, eh?', "You're wobbling!"]), 2);
+          if (isCrave) newCrave();
+        } else if (isCrave) newCrave();
         else say(pick(YUMS));
       }
     }
@@ -612,7 +641,14 @@ function trailPoint(d) {
 }
 
 // ---------- drawing ----------
-function drawPerson(x, y, shirt, hair, skin, phase, moving, longHair) {
+function nameTag(x, y, name) {
+  ctx.font = `800 11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,25,40,.85)'; ctx.lineJoin = 'round';
+  ctx.strokeText(name, x, y + 24); ctx.fillStyle = '#fff'; ctx.fillText(name, x, y + 24);
+}
+function drawPerson(x, y, shirt, hair, skin, phase, moving, longHair, tilt = 0) {
+  ctx.save();
+  if (tilt) { ctx.translate(x, y + 12); ctx.rotate(tilt); ctx.translate(-x, -y - 12); }
   const bob = moving ? Math.abs(Math.sin(phase)) * 3 : 0;
   const leg = moving ? Math.sin(phase) * 4 : 0;
   ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y + 12, 11, 4, 0, 0, 6.283); ctx.fill();
@@ -624,6 +660,8 @@ function drawPerson(x, y, shirt, hair, skin, phase, moving, longHair) {
   ctx.fillStyle = skin; circ(ctx, x, y - 21 - bob, 8); ctx.fill();
   ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(x, y - 22 - bob, 8.5, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
   ctx.fillStyle = '#222'; ctx.fillRect(x - 4, y - 21 - bob, 2, 2.5); ctx.fillRect(x + 2, y - 21 - bob, 2, 2.5);
+  if (tilt) { ctx.fillStyle = 'rgba(255,90,90,.45)'; circ(ctx, x - 5, y - 17 - bob, 2.5); ctx.fill(); circ(ctx, x + 5, y - 17 - bob, 2.5); ctx.fill(); }
+  ctx.restore();
 }
 
 function drawVehicle(v) {
@@ -719,10 +757,11 @@ function render() {
   // y-sorted actors
   const actors = [];
   for (const st of stands) if (onScreen(st, 80)) actors.push({ y: st.y, f: () => drawStand(st) });
-  actors.push({ y: p2.y, f: () => drawPerson(p2.x, p2.y, '#ef5a8a', '#6b3b1f', '#f2c7a5', p2.phase, p2.moving, true) });
+  actors.push({ y: p2.y, f: () => { drawPerson(p2.x, p2.y, '#ef5a8a', '#6b3b1f', '#f2c7a5', p2.phase, p2.moving, true); nameTag(p2.x, p2.y, them); } });
   actors.push({ y: p1.y, f: () => {
     if (p1.inv > 0 && Math.floor(clock * 12) % 2) ctx.globalAlpha = .45;
-    drawPerson(p1.x, p1.y, '#2f6fdf', '#2b1d12', '#e6b48f', p1.phase, p1.moving, false);
+    drawPerson(p1.x, p1.y, '#2f6fdf', '#2b1d12', '#e6b48f', p1.phase, p1.moving, false, p1.drunk > 0 ? Math.sin(clock * 3.3) * .3 : 0);
+    nameTag(p1.x, p1.y, me);
     ctx.globalAlpha = 1;
     if (p1.stun > 0) {
       ctx.font = `14px ${EMOJI_FONT}`; ctx.textAlign = 'center';
@@ -791,9 +830,13 @@ function hud() {
   const t = Math.ceil(left), ts = `⏱ ${t}`, ss = `⭐ ${score}`;
   if (ts !== lastT) { $('time').textContent = ts; $('time').classList.toggle('low', t <= 10); lastT = ts; }
   if (ss !== lastS) { $('score').textContent = ss; lastS = ss; }
+  $('tipsy').classList.toggle('hidden', !(p1.drunk > 0 && state === 'play'));
+  if (p1.drunk > 0) $('tipsy').textContent = p1.pints > 1 ? `🍺×${p1.pints} Tipsy!` : '🍺 Tipsy!';
 }
 
-function start() {
+function start(who) {
+  if (who) { me = who; them = who === 'Kara' ? 'Bryce' : 'Kara'; }
+  $('craveL').textContent = `${them} is craving`;
   reset();
   state = 'play';
   $('title').classList.add('hidden'); $('over').classList.add('hidden');
@@ -805,6 +848,7 @@ function start() {
 function endGame() {
   state = 'over';
   hud();
+  $('tipsy').classList.add('hidden');
   joy.active = false;
   say("I'm stuffed!", 3);
   beep(523, .15, 'triangle'); setTimeout(() => beep(392, .15, 'triangle'), 150); setTimeout(() => beep(262, .35, 'triangle'), 300);
@@ -821,13 +865,14 @@ function endGame() {
   }, 900);
 }
 
-$('startBtn').addEventListener('click', start);
-$('againBtn').addEventListener('click', start);
+$('startKara').addEventListener('click', () => start('Kara'));
+$('startBryce').addEventListener('click', () => start('Bryce'));
+$('againBtn').addEventListener('click', () => start());
 $('shareBtn').addEventListener('click', async () => {
   const url = location.origin + location.pathname;
-  const text = `We just ate our way round London 🇬🇧 ${eaten.join('')} — ${score} points in Snack Crawl! Can you beat us?`;
+  const text = `Kara & Bryce's London Adventure 🇬🇧 I ate ${eaten.join('')} and scored ${score} points! Can you beat it?`;
   try {
-    if (navigator.share) { await navigator.share({ title: 'Snack Crawl London', text, url }); return; }
+    if (navigator.share) { await navigator.share({ title: "Kara & Bryce's London Adventure", text, url }); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(`${text} ${url}`); $('shareBtn').textContent = 'Copied! Paste it in a text ✅'; }
   catch (e) { location.href = `sms:?&body=${encodeURIComponent(text + ' ' + url)}`; }
