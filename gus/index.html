@@ -35,7 +35,7 @@
   .screen.hidden { display: none; }
   .card { background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 8px 0 var(--ink); padding: 20px 24px; max-width: 560px; width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; text-align: center; }
   .card h1 { margin: 0 0 4px; font-size: clamp(28px, 7vw, 44px); line-height: 1.05; }
-  .card h1 .c1 { color: var(--red); } .card h1 .c2 { color: var(--green); } .card h1 .c3 { color: var(--blue); } .card h1 .c4 { color: var(--purple); }
+  .card h1 .c1, .card h1 .c4 { color: #bd3039; } .card h1 .c2, .card h1 .c3 { color: #0c2340; }
   .card h2 { margin: 0 0 8px; font-size: 18px; color: #555; font-weight: 700; }
   .card ul { text-align: left; padding-left: 20px; margin: 12px 0; line-height: 1.45; }
   .card button { font: inherit; font-weight: 900; font-size: 22px; background: var(--yellow); border: 4px solid var(--ink); border-radius: 14px; padding: 10px 28px; cursor: pointer; box-shadow: 0 5px 0 var(--ink); margin-top: 8px; }
@@ -67,15 +67,15 @@
 <div class="screen" id="start">
   <div class="card">
     <h1><span class="c1">Gus</span> <span class="c2">Goes</span> <span class="c3">to the</span> <span class="c4">99</span></h1>
-    <h2>A caterpillar's pub crawl across Boston</h2>
+    <h2>A Boston pub crawl, one Bud Light at a time</h2>
     <ul>
       <li>Steer Gus with <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> / <kbd>WASD</kbd>, or drag anywhere on a phone.</li>
-      <li>Crawl into any <b>99 Restaurant &amp; Pub</b> to grab a <b>Bud Light</b>. Each 99 needs a few seconds to pour the next one.</li>
+      <li>Walk into any <b>99 Restaurant &amp; Pub</b> to grab a <b>Bud Light</b>. Each 99 needs a few seconds to pour the next one.</li>
       <li>Every Bud Light makes Gus wobblier. He drifts, hiccups, and eventually forgets which way is Dorchester.</li>
-      <li>At <b>0:30</b>, <b>Officer TJ</b> starts chasing you and he has opinions. If he catches you, you're busted.</li>
+      <li>At <b>0:30</b>, <b>Officer Ethan</b> starts chasing you, glass of red wine in hand, and he has opinions. If he catches you, you're busted.</li>
       <li>Drink as many as you can in <b>2 minutes</b>.</li>
     </ul>
-    <button id="play">Let's crawl!</button>
+    <button id="play">Let's go, kid!</button>
     <p class="small">Best so far: <span id="bestStart">0</span> Bud Lights</p>
   </div>
 </div>
@@ -87,7 +87,7 @@
     <div class="rank" id="overRank"></div>
     <div class="quote" id="overQuote"></div>
     <p class="small" id="overBest"></p>
-    <button id="again">Crawl again</button>
+    <button id="again">Run it back</button>
   </div>
 </div>
 
@@ -99,7 +99,6 @@
 const W = 3200, H = 2000;
 const GAME_TIME = 120, COP_TIME = 30;
 const GUS_SPEED = 260;
-const SEG_GAP = 34;
 const POUR_TIME = 9;
 
 const cv = document.getElementById('c');
@@ -648,179 +647,145 @@ function drawNinetyNine(c, r) {
   label(c, 'The 99 · ' + r.hood, x, y + 20);
 }
 
-// ---------- Gus ----------
-const SEG_COLORS = [
-  null, // head
-  ['#e3262b', '#b2161b'],
-  ['#1f9d43', '#157531'],
-  ['#1f5fc8', '#15469a'],
-  ['#5b3fa0', '#44307a'],
-  null, // tail
-];
-
-function drawSegment(c, x, y, col, dark, bob) {
-  const w = 56, h = 62;
-  shadow(c, x, y + 2, 32, 8);
-  // dome feet
-  c.fillStyle = dark;
-  for (const fx of [-20, 20]) { c.beginPath(); c.ellipse(x + fx, y - 2 + (fx < 0 ? bob : -bob), 12, 10, 0, Math.PI, 0); c.fill(); c.fillRect(x + fx - 12, y - 2 + (fx < 0 ? bob : -bob), 24, 3); }
-  // dome body
-  const top = y - h - 4;
-  c.fillStyle = col;
-  c.beginPath();
-  c.moveTo(x - w / 2, y - 6);
-  c.lineTo(x - w / 2, top + w / 2);
-  c.arc(x, top + w / 2, w / 2, Math.PI, 0);
-  c.lineTo(x + w / 2, y - 6);
-  c.closePath(); c.fill();
-  c.strokeStyle = dark; c.lineWidth = 2; c.stroke();
-  // ribs
-  c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(x - 14, top + 6); c.lineTo(x - 14, y - 8); c.moveTo(x + 14, top + 6); c.lineTo(x + 14, y - 8); c.stroke();
-  // shine
-  c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(x - 12, top + 18, 7, 12, -0.3, 0, Math.PI * 2); c.fill();
-  // porthole
-  c.fillStyle = 'rgba(20,10,10,.65)'; ellipse(c, x + 3, y - h * 0.52, 9, 10); c.fill();
-  c.strokeStyle = dark; c.lineWidth = 2; c.stroke();
-  // yellow clip on top
-  c.fillStyle = '#ffcc1a'; rrect(c, x - 7, top - 3, 14, 11, 3); c.fill();
-  c.strokeStyle = '#c99a00'; c.lineWidth = 1.5; c.stroke();
-}
-
-function drawHead(c, x, y, face, bob, drunk, t, hicLift) {
-  y -= hicLift;
+// ---------- Gus (Boston dude) ----------
+function drawDude(c, x, y, face, walk, drunk, t, hicLift, moving, holding) {
   const f = face;
-  shadow(c, x + f * 18, y + 2 + hicLift, 50, 10);
-  // tongue slide
-  c.fillStyle = '#e3262b';
-  c.beginPath();
-  c.moveTo(x + f * 6, y - 22);
-  c.quadraticCurveTo(x + f * 44, y - 20, x + f * 64, y - 6);
-  c.quadraticCurveTo(x + f * 70, y + 2, x + f * 56, y + 4);
-  c.lineTo(x + f * 10, y);
-  c.closePath(); c.fill();
-  c.strokeStyle = '#a5161b'; c.lineWidth = 2; c.stroke();
-  c.fillStyle = '#ffcc1a'; ellipse(c, x + f * 46, y - 6, 3, 2); c.fill();
-  // red feet
-  c.fillStyle = '#e3262b';
-  for (const fx of [-22, 22]) { c.beginPath(); c.ellipse(x + fx, y - 2 + (fx < 0 ? bob : -bob), 13, 11, 0, Math.PI, 0); c.fill(); }
-  // antennae
-  const wig = Math.sin(t * 6) * 3 + Math.sin(t * 2.2) * drunk * 0.6;
-  c.strokeStyle = '#ffcc1a'; c.lineWidth = 9; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(x - 16, y - 100); c.quadraticCurveTo(x - 30, y - 120, x - 24 + wig, y - 142); c.stroke();
-  c.beginPath(); c.moveTo(x + 16, y - 100); c.quadraticCurveTo(x + 30, y - 120, x + 24 - wig, y - 142); c.stroke();
-  c.fillStyle = '#ffcc1a';
-  ellipse(c, x - 24 + wig, y - 146, 11, 11); c.fill(); ellipse(c, x + 24 - wig, y - 146, 11, 11); c.fill();
-  c.fillStyle = '#f0a800'; ellipse(c, x - 24 + wig, y - 146, 5, 5); c.fill(); ellipse(c, x + 24 - wig, y - 146, 5, 5); c.fill();
+  const step = moving ? Math.sin(walk) : 0;
+  shadow(c, x, y + 2, 24, 8);
+  c.save();
+  c.translate(x, y - hicLift);
+  c.rotate(drunk > 0 ? Math.sin(t * 2.6) * Math.min(drunk, 14) * 0.012 : 0);
+  c.scale(1.65, 1.65);
+  // legs (jeans)
+  c.fillStyle = '#3d5a8a';
+  c.fillRect(-10, -30 + Math.max(0, step) * -4, 8, 30 - Math.max(0, step) * -4);
+  c.fillRect(2, -30 + Math.max(0, -step) * -4, 8, 30 - Math.max(0, -step) * -4);
+  // white sneakers
+  c.fillStyle = '#f4f4f4';
+  rrect(c, -12 + f * 1, -5 - Math.max(0, step) * 4, 12, 6, 2); c.fill();
+  rrect(c, 0 + f * 1, -5 - Math.max(0, -step) * 4, 12, 6, 2); c.fill();
+  c.fillStyle = '#bd3039'; c.fillRect(-10 + f, -3 - Math.max(0, step) * 4, 8, 1.5); c.fillRect(2 + f, -3 - Math.max(0, -step) * 4, 8, 1.5);
+  // hoodie
+  c.fillStyle = '#8b9099'; rrect(c, -14, -62, 28, 35, 8); c.fill();
+  c.fillStyle = '#7a7f88'; c.fillRect(-14, -31, 28, 4);
+  c.fillStyle = '#7a7f88'; rrect(c, -9, -44, 18, 9, 3); c.fill(); // pouch pocket
+  c.fillStyle = '#6f747c'; ellipse(c, -f * 5, -61, 11, 5); c.fill(); // hood bunched at neck
+  c.strokeStyle = '#eee'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(f * 2 - 2, -60); c.lineTo(f * 2 - 3, -50); c.moveTo(f * 2 + 3, -60); c.lineTo(f * 2 + 4, -51); c.stroke();
+  c.fillStyle = '#bd3039'; c.font = '900 5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('BOSTON', 0, -50);
+  // arms
+  const sw = step * 6;
+  c.strokeStyle = '#8b9099'; c.lineWidth = 7; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-f * 12, -58); c.lineTo(-f * 17, -40 + sw); c.stroke();
+  c.beginPath(); c.moveTo(f * 12, -58); c.lineTo(f * 20, -44 - sw); c.stroke();
   c.lineCap = 'butt';
-  // yellow head frame (arch)
-  c.fillStyle = '#ffcc1a';
-  c.beginPath();
-  c.moveTo(x - 32, y - 4);
-  c.lineTo(x - 36, y - 70);
-  c.quadraticCurveTo(x - 38, y - 112, x - 12, y - 110);
-  // crown zigzag
-  c.lineTo(x - 8, y - 122); c.lineTo(x - 2, y - 111); c.lineTo(x + 4, y - 124); c.lineTo(x + 9, y - 110);
-  c.quadraticCurveTo(x + 38, y - 112, x + 36, y - 70);
-  c.lineTo(x + 32, y - 4);
-  c.lineTo(x + 20, y - 4);
-  c.lineTo(x + 20, y - 30);
-  c.quadraticCurveTo(x, y - 52, x - 20, y - 30);
-  c.lineTo(x - 20, y - 4);
-  c.closePath(); c.fill();
-  c.strokeStyle = '#c99a00'; c.lineWidth = 2; c.stroke();
-  // tunnel inside
-  c.fillStyle = '#7a1014';
-  c.beginPath(); c.moveTo(x - 18, y - 4); c.lineTo(x - 18, y - 29); c.quadraticCurveTo(x, y - 49, x + 18, y - 29); c.lineTo(x + 18, y - 4); c.closePath(); c.fill();
-  // blush (grows with drunk)
+  c.fillStyle = '#f0c29c'; ellipse(c, -f * 17, -39 + sw, 3.5, 3.5); c.fill(); ellipse(c, f * 20, -43 - sw, 3.5, 3.5); c.fill();
+  if (holding) drawBudLight(c, f * 21, -37 - sw, 0.45);
+  // neck + head
+  c.fillStyle = '#f0c29c'; c.fillRect(-4, -68, 8, 8);
+  ellipse(c, 0, -77, 12, 13); c.fill();
+  ellipse(c, -f * 10, -76, 3, 4); c.fill(); // ear
+  // brown hair poking out under the cap
+  c.fillStyle = '#6b4423';
+  ellipse(c, -f * 9, -80, 6, 8); c.fill();
+  c.beginPath(); c.moveTo(-f * 13, -84); c.lineTo(-f * 16, -74); c.lineTo(-f * 11, -77); c.lineTo(-f * 12, -70); c.lineTo(-f * 7, -76); c.closePath(); c.fill();
+  c.fillRect(f > 0 ? 5 : -7, -80, 2, 8); // sideburn
+  c.fillStyle = 'rgba(107,68,35,.22)'; ellipse(c, f * 4, -68, 8, 4); c.fill(); // stubble
+  // blush
   if (drunk > 0) {
-    c.fillStyle = `rgba(255,70,90,${Math.min(0.75, drunk * 0.07)})`;
-    ellipse(c, x - 22, y - 60, 8, 5); c.fill(); ellipse(c, x + 22, y - 60, 8, 5); c.fill();
+    c.fillStyle = `rgba(255,70,90,${Math.min(0.7, drunk * 0.06)})`;
+    ellipse(c, f * 8, -72, 3.5, 2.5); c.fill(); ellipse(c, -f * 1, -72, 3, 2.2); c.fill();
   }
-  // googly eyes
-  for (const ex of [-12, 12]) {
-    const cx = x + ex + f * 2, cy = y - 78;
-    c.fillStyle = '#fff'; ellipse(c, cx, cy, 10, 14); c.fill();
-    c.strokeStyle = '#9a9a9a'; c.lineWidth = 2; c.stroke();
+  // eyes
+  for (const ex of [-3.5, 3.5]) {
+    const cx = f * 4 + ex, cy = -77;
+    c.fillStyle = '#fff'; ellipse(c, cx, cy, 2.6, 2.8); c.fill();
     let px, py;
-    if (drunk >= 3) { const a = t * (2 + drunk * 0.25) + ex; px = Math.cos(a) * 4; py = Math.sin(a) * 6; }
-    else { px = f * 4; py = 3 + Math.sin(t * 9) * 1.5; }
-    c.fillStyle = '#111'; ellipse(c, cx + px, cy + py, 5, 6); c.fill();
-    c.fillStyle = '#fff'; ellipse(c, cx + px - 1.5, cy + py - 2, 1.5, 1.5); c.fill();
-    if (drunk >= 6) { // droopy eyelids
-      c.fillStyle = '#ffcc1a'; c.beginPath(); c.ellipse(cx, cy, 11, 15, 0, Math.PI * 1.05, Math.PI * 1.95); c.fill();
-    }
+    if (drunk >= 3) { const a = t * (2 + drunk * 0.25) + ex; px = Math.cos(a) * 1.1; py = Math.sin(a) * 1.1; }
+    else { px = f * 0.9; py = 0.3; }
+    c.fillStyle = '#3a2614'; ellipse(c, cx + px, cy + py, 1.4, 1.5); c.fill();
+    if (drunk >= 6) { c.fillStyle = '#f0c29c'; c.beginPath(); c.ellipse(cx, cy, 3, 3.1, 0, Math.PI, 0); c.fill(); }
   }
+  // brows
+  c.strokeStyle = '#6b4423'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(f * 4 - 6, -81.5); c.lineTo(f * 4 - 1.5, -81); c.moveTo(f * 4 + 1.5, -81); c.lineTo(f * 4 + 6, -81.5); c.stroke();
   // nose
-  c.fillStyle = drunk >= 4 ? '#ff2a4a' : '#e3262b';
-  ellipse(c, x + f * 4, y - 58, 7, 6); c.fill();
-  c.fillStyle = 'rgba(255,255,255,.5)'; ellipse(c, x + f * 4 - 2, y - 60, 2, 1.5); c.fill();
-  // smile
-  c.strokeStyle = '#8a5a00'; c.lineWidth = 2;
-  c.beginPath(); c.arc(x + f * 3, y - 54, 10, 0.25 + (drunk > 5 ? 0.3 : 0), Math.PI - 0.25); c.stroke();
+  c.fillStyle = drunk >= 4 ? '#ff5a6e' : '#e3a986'; ellipse(c, f * 10, -74, 2.6, 2.2); c.fill();
+  // grin
+  c.strokeStyle = '#7a3a2a'; c.lineWidth = 1.3;
+  c.beginPath(); c.arc(f * 5, -71, 3.6, 0.2 + (drunk > 5 ? 0.35 : 0), Math.PI - 0.2); c.stroke();
+  // Red Sox cap
+  c.fillStyle = '#0c2340';
+  c.beginPath(); c.ellipse(0, -84, 13, 10, 0, Math.PI, 0); c.fill();
+  c.fillRect(-13, -85, 26, 3);
+  c.fillStyle = '#081a31'; c.beginPath(); c.ellipse(f * 14, -83, 10, 2.6, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#bd3039'; ellipse(c, 0, -94, 1.6, 1.2); c.fill();
+  c.font = '900 10px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 1.6; c.strokeStyle = '#fff'; c.strokeText('B', f * 4, -88);
+  c.fillStyle = '#bd3039'; c.fillText('B', f * 4, -88);
+  c.restore();
 }
 
-function drawTail(c, x, y, bob) {
-  shadow(c, x, y + 2, 30, 8);
-  c.fillStyle = '#ffcc1a';
-  for (const fx of [-20, 20]) { c.beginPath(); c.ellipse(x + fx, y - 2 + (fx < 0 ? bob : -bob), 12, 10, 0, Math.PI, 0); c.fill(); }
-  c.strokeStyle = '#ffcc1a'; c.lineWidth = 10; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(x - 22, y - 6); c.lineTo(x - 24, y - 50); c.quadraticCurveTo(x, y - 78, x + 24, y - 50); c.lineTo(x + 22, y - 6); c.stroke();
-  // tail stalk
-  c.lineWidth = 8;
-  c.beginPath(); c.moveTo(x, y - 66); c.quadraticCurveTo(x - 6, y - 96, x + 4, y - 116); c.stroke();
-  c.lineCap = 'butt';
-  c.fillStyle = '#ffcc1a'; ellipse(c, x + 4, y - 120, 9, 9); c.fill();
-  c.fillStyle = '#f0a800'; ellipse(c, x + 4, y - 120, 4, 4); c.fill();
-}
-
-// ---------- TJ ----------
-function drawTJ(c, x, y, face, t, moving) {
+// ---------- Officer Ethan ----------
+function drawCop(c, x, y, face, t, moving) {
   const f = face;
   const step = moving ? Math.sin(t * 14) : 0;
   shadow(c, x, y + 2, 26, 8);
   c.save();
   c.translate(x, y);
-  c.scale(1.25, 1.25);
+  c.scale(1.6, 1.6);
   // legs
   c.fillStyle = '#1c2a4a';
   c.fillRect(-11, -30 + Math.max(0, step) * -4, 9, 30 - Math.max(0, step) * -4);
   c.fillRect(2, -30 + Math.max(0, -step) * -4, 9, 30 - Math.max(0, -step) * -4);
   c.fillStyle = '#111'; c.fillRect(-13, -4 - Math.max(0, step) * 4, 12, 5); c.fillRect(1, -4 - Math.max(0, -step) * 4, 12, 5);
-  // gut
-  c.fillStyle = '#26365c'; rrect(c, -16, -66, 32, 40, 10); c.fill();
-  c.fillStyle = '#2f4270'; ellipse(c, f * 3, -40, 15, 14); c.fill();
-  // belt + badge
-  c.fillStyle = '#111'; c.fillRect(-16, -32, 32, 5);
+  // uniform
+  c.fillStyle = '#26365c'; rrect(c, -15, -66, 30, 40, 9); c.fill();
+  c.fillStyle = '#111'; c.fillRect(-15, -32, 30, 5);
   c.fillStyle = '#d4a017'; c.fillRect(-3, -32, 6, 5);
   c.fillStyle = '#e6c04a'; c.beginPath(); c.moveTo(-8, -58); c.lineTo(-4, -60); c.lineTo(0, -58); c.lineTo(-1, -52); c.lineTo(-7, -52); c.closePath(); c.fill();
+  c.fillStyle = '#fff'; c.fillRect(4, -60, 7, 3); // name bar
   // arms
-  const sw = step * 6;
+  const sw = step * 5;
   c.strokeStyle = '#26365c'; c.lineWidth = 8; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(-14, -60); c.lineTo(-20, -40 + sw); c.stroke();
-  c.beginPath(); c.moveTo(14, -60); c.lineTo(20 + f * 4, -44 - sw); c.stroke();
+  c.beginPath(); c.moveTo(-f * 13, -60); c.lineTo(-f * 19, -40 + sw); c.stroke();
+  c.beginPath(); c.moveTo(f * 13, -60); c.lineTo(f * 22, -50); c.stroke();
   c.lineCap = 'butt';
-  // donut in hand
-  c.fillStyle = '#e8b27a'; ellipse(c, 22 + f * 4, -44 - sw, 7, 7); c.fill();
-  c.fillStyle = '#ff8fc2'; ellipse(c, 22 + f * 4, -45 - sw, 6, 5); c.fill();
-  c.fillStyle = '#e8b27a'; ellipse(c, 22 + f * 4, -44 - sw, 2.3, 2.3); c.fill();
+  c.fillStyle = '#f2c4a0'; ellipse(c, -f * 19, -39 + sw, 3.5, 3.5); c.fill(); ellipse(c, f * 23, -50, 3.5, 3.5); c.fill();
+  // glass of red wine, held up and sloshing
+  const gx = f * 24, gy = -52;
+  c.strokeStyle = 'rgba(230,240,250,.95)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx, gy - 9); c.moveTo(gx - 4, gy); c.lineTo(gx + 4, gy); c.stroke();
+  const slosh = Math.sin(t * 9) * (moving ? 1.6 : 0.4);
+  c.fillStyle = '#7b0f2a';
+  c.beginPath(); c.moveTo(gx - 5.5, gy - 16 + slosh); c.lineTo(gx + 5.5, gy - 16 - slosh); c.quadraticCurveTo(gx + 5, gy - 9, gx, gy - 9); c.quadraticCurveTo(gx - 5, gy - 9, gx - 5.5, gy - 16 + slosh); c.fill();
+  c.strokeStyle = 'rgba(230,240,250,.9)'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(gx - 6.5, gy - 23); c.quadraticCurveTo(gx - 7, gy - 9, gx, gy - 9); c.quadraticCurveTo(gx + 7, gy - 9, gx + 6.5, gy - 23); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(gx - 4.5, gy - 21, 1.2, 6);
   // head
-  c.fillStyle = '#f2c4a0'; ellipse(c, 0, -78, 13, 14); c.fill();
-  c.fillStyle = '#e8a0a0'; ellipse(c, f * 9, -75, 4, 3); c.fill();
-  // eyes
-  c.fillStyle = '#111'; ellipse(c, f * 4 - 4, -80, 1.8, 2); c.fill(); ellipse(c, f * 4 + 4, -80, 1.8, 2); c.fill();
-  // angry brows
-  c.strokeStyle = '#4a2f1b'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(f * 4 - 8, -86); c.lineTo(f * 4 - 1, -84); c.moveTo(f * 4 + 8, -86); c.lineTo(f * 4 + 1, -84); c.stroke();
-  // mustache
-  c.fillStyle = '#5a3a20'; c.beginPath(); c.ellipse(f * 3, -71, 8, 3.5, 0, 0, Math.PI * 2); c.fill();
-  // cap
-  c.fillStyle = '#1c2a4a'; rrect(c, -14, -100, 28, 14, 4); c.fill();
-  c.fillStyle = '#111'; c.beginPath(); c.ellipse(f * 8, -87, 13, 3.5, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#e6c04a'; ellipse(c, 0, -94, 3.5, 3.5); c.fill();
+  c.fillStyle = '#f2c4a0'; ellipse(c, 0, -78, 12, 14); c.fill();
+  ellipse(c, -f * 10, -77, 3, 4); c.fill();
+  // eyes: half-lidded, unimpressed
+  c.fillStyle = '#111'; ellipse(c, f * 4 - 4, -79, 1.8, 1.3); c.fill(); ellipse(c, f * 4 + 4, -79, 1.8, 1.3); c.fill();
+  c.strokeStyle = '#1a120c'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(f * 4 - 8, -84); c.lineTo(f * 4 - 1, -83); c.moveTo(f * 4 + 1, -85); c.quadraticCurveTo(f * 4 + 5, -88, f * 4 + 8, -85); c.stroke(); // one raised brow
+  c.fillStyle = '#e3a986'; ellipse(c, f * 10, -76, 2.5, 2.2); c.fill();
+  // smirk
+  c.strokeStyle = '#7a3a2a'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(f * 1, -70); c.quadraticCurveTo(f * 5, -69, f * 9, -72); c.stroke();
+  // slicked-back hair
+  c.fillStyle = '#1e140d';
+  c.beginPath();
+  c.moveTo(f * 11, -84);
+  c.quadraticCurveTo(f * 8, -95, -f * 4, -94);
+  c.quadraticCurveTo(-f * 15, -92, -f * 14, -76);
+  c.lineTo(-f * 10, -80);
+  c.quadraticCurveTo(-f * 4, -86, f * 11, -84);
+  c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1;
+  for (const o of [0, 3]) { c.beginPath(); c.moveTo(f * 8, -88 - o); c.quadraticCurveTo(-f * 2, -92 - o * 0.3, -f * 11, -84 - o); c.stroke(); }
   c.restore();
-  // name tag
-  label(c, 'Officer TJ', x, y + 18);
+  label(c, 'Officer Ethan', x, y + 20);
 }
 
 // ---------- speech bubble ----------
@@ -853,52 +818,52 @@ function drawBubble(c, text, sx, sy, tailX) {
   lines.forEach((l, i) => c.fillText(l, bx + 11, by + 8 + i * lh));
 }
 
-// ---------- TJ's material ----------
-const TJ_LINES = [
-  "Hey Slinky! You're walkin' like a busted accordion!",
-  "Nice googly eyes, pal. Were they like that BEFORE the Bud Lights?",
-  "Sir. You are a playground tunnel. Go home.",
-  "You got more colors than a bag of Skittles and you're twice as lit!",
-  "All those feet and not ONE of 'em knows where it's goin'!",
-  "Bud Light? Really? At least drink a Sam Adams, ya caterpillah!",
-  "Your tongue's hangin' out like a slide at a Chuck E. Cheese!",
-  "I've seen straighter lines at Dunkin' at 6 AM!",
-  "You look like a Little Tikes yard sale, buddy!",
-  "Everything Is Free Winchester called. They want their tunnel back!",
-  "Rated for outdoor play? You're rated for the DRUNK TANK!",
-  "Stop right there, you wicked hammahed pool noodle!",
-  "Those antennas pickin' up anything besides last call?",
-  "You're the only perp I know who's also a daycare hazard!",
+// ---------- Officer Ethan's material ----------
+const COP_LINES = [
+  "Bud Light? Pal, that's not beer. That's sparkling tap water.",
+  "Nice Sox hat. Did it come free with the DUI?",
+  "I'd pair your breath with... a mop.",
+  "Look at that hair stickin' out. You cut it yourself in a Dunkin' bathroom?",
+  "This is a 2018 Brunello. You're a 2 AM Bud Light. We are not the same.",
   "Walk a straight line! ...Okay, walk ANY line!",
-  "You've got a hole in every segment. Explains where the beer's goin'.",
-  "Even the Green Line runs straighter than you!",
-  "Buddy, you're swervin' like a Masshole on Storrow!",
-  "Nice crown, your majesty. King of the Bud Light Lime?",
-  "Kid tunnel by day, bah crawlah by night. Pathetic.",
-  "I got a donut in one hand and your rights in the other!",
-  "You smell like a Fenway bathroom in the 7th inning!",
-  "Red nose, googly eyes... you a caterpillar or a clown car?",
-  "Why do you need FIVE seats at the bah?!",
+  "You're swervin' like a Masshole on Storrow!",
+  "Even the Green Line runs straighter than you.",
+  "Is that a hoodie or a napkin with sleeves?",
+  "Your nose is redder than my Cabernet, buddy.",
+  "You smell like a Fenway bathroom in the 7th inning.",
+  "Big Papi retired. Maybe you should retire from drinkin'.",
+  "I've seen straighter lines at Dunkin' at 6 AM.",
+  "Your eyes are doin' the wave, champ.",
+  "Swirl, sniff, sip. Not chug, burp, stumble.",
+  "That hair's got more grease than a 99 appetizer sampler.",
+  "You look like the 'before' picture in a rehab ad.",
+  "Stop right there, you wicked hammahed townie!",
+  "I'm on duty AND drinkin' wine, and I'm still classier than you.",
+  "Your Sox hat's crooked. So's your whole life.",
+  "Is that a mustard stain or a personality?",
+  "Hands where I can see 'em! Not the Bud Light, the HANDS!",
+  "Tasting notes on you: regret, Axe body spray, and a hint of Southie.",
+  "Brown hair, Sox hat, gray hoodie. You're every guy at every 99, pal.",
 ];
-const TJ_DRINK_LINES = [
+const COP_DRINK_LINES = [
   "ANOTHER one?! Your liver's filin' a restraining order!",
-  "Did you just chug that in the doorway? Classy!",
-  "That's a lot of Bud Lights for something shaped like a hallway!",
-  "Hey bartendah! Cut off the caterpillah!",
+  "Chuggin' in the doorway? At least let it breathe!",
+  "You don't drink Bud Light, you just rent it.",
+  "Hey bartendah! Cut off the guy in the Sox hat!",
 ];
-const TJ_WATER_LINES = [
+const COP_WATER_LINES = [
   "Swimmin' in the Charles? That's how you grow a third eye, pal!",
   "Get outta the water! You're scarin' the ducks!",
 ];
-const TJ_CONFUSED_LINES = [
+const COP_CONFUSED_LINES = [
   "You're goin' BACKWARDS, genius!",
   "Which way is Dorchestah? Not THAT way!",
 ];
-const TJ_BUSTED_LINES = [
+const COP_BUSTED_LINES = [
   "You have the right to remain wobbly.",
   "Anything you slur can and will be used against you.",
   "Book 'em for public intoxication and crimes against fashion.",
-  "Congrats, you're goin' in the back of the cruisah. All five of ya.",
+  "Now if you'll excuse me, my Pinot's gettin' warm.",
 ];
 
 // ---------- audio ----------
@@ -964,7 +929,7 @@ function say(text) {
 const START = { x: 1960, y: 1060 };
 let state = 'start';
 let T = 0, elapsed = 0, beers = 0, lastTs = 0;
-let gus, tj, restaurants, floats, trail;
+let gus, cop, restaurants, floats;
 let input = { x: 0, y: 0 };
 const keys = {};
 let joy = null;
@@ -974,31 +939,10 @@ try { best = parseInt(localStorage.getItem('gus99best') || '0', 10) || 0; } catc
 function resetGame() {
   elapsed = 0; beers = 0;
   gus = { x: START.x, y: START.y, vx: 0, vy: 0, face: 1, walk: 0, driftX: 0, driftY: 0, wobN: 0, hic: 4, hicLift: 0, confuse: 0, chug: 0, confuseCd: 0, splash: 0 };
-  trail = [];
-  for (let i = 0; i < 60; i++) trail.push({ x: START.x - i * 6, y: START.y });
-  tj = { active: false, x: 0, y: 0, face: -1, remarkT: 0, text: '', textT: 0, recent: [], moving: false };
+  cop = { active: false, x: 0, y: 0, face: -1, remarkT: 0, text: '', textT: 0, recent: [], moving: false };
   restaurants = RESTAURANTS.map(r => ({ ...r, cd: 0 }));
   floats = [];
   updateHud();
-}
-
-function segPositions() {
-  // walk back along trail placing segments at SEG_GAP intervals
-  const out = [{ x: gus.x, y: gus.y }];
-  let need = SEG_GAP, px = gus.x, py = gus.y;
-  for (let i = 0; i < trail.length && out.length < 6; i++) {
-    const p = trail[i];
-    let dx = p.x - px, dy = p.y - py, d = Math.hypot(dx, dy);
-    while (d >= need && out.length < 6) {
-      const k = need / d;
-      px += dx * k; py += dy * k;
-      out.push({ x: px, y: py });
-      dx = p.x - px; dy = p.y - py; d = Math.hypot(dx, dy); need = SEG_GAP;
-    }
-    need -= d; px = p.x; py = p.y;
-  }
-  while (out.length < 6) { const l = out[out.length - 1]; out.push({ x: l.x - SEG_GAP, y: l.y }); }
-  return out;
 }
 
 function addFloat(x, y, text, color, size) { floats.push({ x, y, text, color: color || '#fff', size: size || 22, t: 0, life: 1.6 }); }
@@ -1009,16 +953,16 @@ function banner(text, secs) {
   b.textContent = text; b.classList.add('show'); bannerTimer = secs || 2.5;
 }
 
-function tjSay(text) {
-  tj.text = text; tj.textT = 3.6; tj.remarkT = rand(4.2, 6);
+function copSay(text) {
+  cop.text = text; cop.textT = 3.6; cop.remarkT = rand(4.2, 6);
   say(text);
 }
-function tjRemark(pool) {
-  let choices = pool.filter(l => !tj.recent.includes(l));
+function copRemark(pool) {
+  let choices = pool.filter(l => !cop.recent.includes(l));
   if (!choices.length) choices = pool;
   const line = pick(choices);
-  tj.recent.push(line); if (tj.recent.length > 10) tj.recent.shift();
-  tjSay(line);
+  cop.recent.push(line); if (cop.recent.length > 10) cop.recent.shift();
+  copSay(line);
 }
 
 function buzzLabel(b) {
@@ -1028,13 +972,13 @@ function buzzLabel(b) {
   if (b <= 8) return 'Wicked buzzed';
   if (b <= 12) return 'Hammahed';
   if (b <= 16) return 'Absolutely lit';
-  return 'Blackout larva';
+  return 'Blackout on Lansdowne';
 }
 function rankFor(b) {
   if (b === 0) return 'Designated Driver';
-  if (b <= 3) return 'Lightweight Larva';
-  if (b <= 7) return 'Wicked Buzzed Bug';
-  if (b <= 12) return 'Cocoon-Faced';
+  if (b <= 3) return 'Lightweight';
+  if (b <= 7) return 'Wicked Buzzed';
+  if (b <= 12) return 'Full Townie';
   if (b <= 18) return 'Absolutely Hammahed';
   return 'Legend of the 99';
 }
@@ -1079,8 +1023,8 @@ function update(dt) {
   if (gus.confuse > 0) gus.confuse -= dt;
   else if (d >= 6 && gus.confuseCd <= 0 && Math.random() < (d - 5) * 0.035 * dt * 1.0) {
     gus.confuse = rand(1.4, 2.4); gus.confuseCd = 4;
-    addFloat(gus.x, gus.y - 170, pick(['Which way is up?!', 'Wait... where am I?', 'Left is right now?', 'Everything is spinnin\'!']), '#ffe14d', 20);
-    if (tj.active && Math.random() < 0.6) tjRemark(TJ_CONFUSED_LINES);
+    addFloat(gus.x, gus.y - 185, pick(['Which way is up?!', 'Wait... where am I?', 'Left is right now?', 'Everything is spinnin\'!']), '#ffe14d', 20);
+    if (cop.active && Math.random() < 0.6) copRemark(COP_CONFUSED_LINES);
   }
   if (gus.confuse > 0) { ix = -ix; iy = -iy; }
 
@@ -1106,14 +1050,14 @@ function update(dt) {
       const a = Math.random() * Math.PI * 2, imp = 80 + d * 18;
       gus.vx += Math.cos(a) * imp; gus.vy += Math.sin(a) * imp;
       gus.hicLift = 14;
-      addFloat(gus.x + rand(-20, 20), gus.y - 160, 'hic!', '#fff', 20);
+      addFloat(gus.x + rand(-20, 20), gus.y - 175, 'hic!', '#fff', 20);
       sfx.hic();
     }
   }
   gus.hicLift = Math.max(0, gus.hicLift - dt * 60);
 
   const inWater = isWater(gus.x, gus.y);
-  if (inWater) { gus.splash -= dt; if (gus.splash <= 0) { gus.splash = 5; addFloat(gus.x, gus.y - 150, 'SPLASH! Swimmin\' is slow!', '#bfe3ff', 18); if (tj.active && Math.random() < 0.5) tjRemark(TJ_WATER_LINES); } }
+  if (inWater) { gus.splash -= dt; if (gus.splash <= 0) { gus.splash = 5; addFloat(gus.x, gus.y - 185, 'SPLASH! Swimmin\' is slow!', '#bfe3ff', 18); if (cop.active && Math.random() < 0.5) copRemark(COP_WATER_LINES); } }
   else gus.splash = Math.min(gus.splash, 0.5);
 
   if (gus.chug > 0) gus.chug -= dt;
@@ -1128,13 +1072,6 @@ function update(dt) {
   gus.walk += speed * dt * 0.08;
   if (Math.abs(gus.vx) > 12) gus.face = gus.vx > 0 ? 1 : -1;
 
-  // trail
-  const last = trail[0];
-  if (Math.hypot(gus.x - last.x, gus.y - last.y) > 3) {
-    trail.unshift({ x: gus.x, y: gus.y });
-    if (trail.length > 120) trail.pop();
-  }
-
   // restaurants
   for (const r of restaurants) {
     if (r.cd > 0) r.cd -= dt;
@@ -1146,29 +1083,29 @@ function update(dt) {
       if (beers % 5 === 0) addFloat(r.x, r.y - 200, `${beers} down!`, '#ffe14d', 22);
       sfx.crack(); sfx.glug(); if (Math.random() < 0.5 || beers % 3 === 0) sfx.burp();
       updateHud();
-      if (tj.active && Math.random() < 0.45) tjRemark(TJ_DRINK_LINES);
+      if (cop.active && Math.random() < 0.45) copRemark(COP_DRINK_LINES);
     }
   }
 
-  // TJ
-  if (!tj.active && elapsed >= COP_TIME) spawnTJ();
-  if (tj.active) {
-    const dx = gus.x - tj.x, dy = gus.y - tj.y, dist = Math.hypot(dx, dy);
-    const tsp = (170 + (elapsed - COP_TIME) * 0.85) * (isWater(tj.x, tj.y) ? 0.5 : 1);
-    if (dist > 1) { tj.x += dx / dist * tsp * dt; tj.y += dy / dist * tsp * dt; }
-    tj.moving = true;
-    if (Math.abs(dx) > 4) tj.face = dx > 0 ? 1 : -1;
-    tj.remarkT -= dt;
-    if (tj.textT > 0) tj.textT -= dt;
-    if (tj.remarkT <= 0) tjRemark(TJ_LINES);
-    if (dist < 42) { endGame('busted'); return; }
+  // Officer Ethan
+  if (!cop.active && elapsed >= COP_TIME) spawnCop();
+  if (cop.active) {
+    const dx = gus.x - cop.x, dy = gus.y - cop.y, dist = Math.hypot(dx, dy);
+    const tsp = (170 + (elapsed - COP_TIME) * 0.85) * (isWater(cop.x, cop.y) ? 0.5 : 1);
+    if (dist > 1) { cop.x += dx / dist * tsp * dt; cop.y += dy / dist * tsp * dt; }
+    cop.moving = true;
+    if (Math.abs(dx) > 4) cop.face = dx > 0 ? 1 : -1;
+    cop.remarkT -= dt;
+    if (cop.textT > 0) cop.textT -= dt;
+    if (cop.remarkT <= 0) copRemark(COP_LINES);
+    if (dist < 46) { endGame('busted'); return; }
   }
 
   // HUD refresh ~ every frame is fine for text
   updateHud();
 }
 
-function spawnTJ() {
+function spawnCop() {
   let best = null;
   for (let i = 0; i < 40; i++) {
     const a = Math.random() * Math.PI * 2, r = 720;
@@ -1177,10 +1114,10 @@ function spawnTJ() {
     best = { x, y }; break;
   }
   if (!best) best = { x: gus.x < W / 2 ? W - 400 : 200, y: gus.y < H / 2 ? H - 100 : 700 };
-  tj.active = true; tj.x = best.x; tj.y = best.y;
+  cop.active = true; cop.x = best.x; cop.y = best.y;
   sfx.whistle(); sfx.siren();
-  banner('🚨 Officer TJ is on your tail! 🚨', 3);
-  tjSay(pick(["Hey! YOU! The caterpillah! Freeze!", "Well well well. If it isn't the Little Tikes pub crawl.", "BPD! Stop crawlin', you five-piece disaster!"]));
+  banner('🚨 Officer Ethan is on your tail! 🚨', 3);
+  copSay(pick(["Hey! YOU! Sox hat! Freeze!", "Well well well. If it isn't Southie's finest townie.", "BPD! Put down the Bud Light and nobody gets hurt. Except your liver."]));
 }
 
 function endGame(reason) {
@@ -1188,15 +1125,15 @@ function endGame(reason) {
   if ('speechSynthesis' in window) try { window.speechSynthesis.cancel(); } catch (e) {}
   const isNew = beers > best;
   if (isNew) { best = beers; try { localStorage.setItem('gus99best', String(best)); } catch (e) {} }
-  document.getElementById('overTitle').textContent = reason === 'busted' ? '🚔 BUSTED by TJ!' : "⏰ Last call! Time's up!";
+  document.getElementById('overTitle').textContent = reason === 'busted' ? '🚔 BUSTED by Officer Ethan!' : "⏰ Last call! Time's up!";
   document.getElementById('overBeers').textContent = beers;
   document.getElementById('overRank').textContent = rankFor(beers);
   let q;
-  if (reason === 'busted') q = pick(TJ_BUSTED_LINES);
+  if (reason === 'busted') q = pick(COP_BUSTED_LINES);
   else if (beers === 0) q = "Zero Bud Lights? What are ya, a responsible adult? Get outta here.";
-  else if (beers < 6) q = "Lucky for you my shift's over. Go sleep it off in a sandbox.";
+  else if (beers < 6) q = "Lucky for you my shift's over. Go sleep it off on the Common.";
   else q = `${beers} Bud Lights and you're still standin'? ...Sorta standin'. I'm callin' your mother.`;
-  document.getElementById('overQuote').textContent = 'Officer TJ: "' + q + '"';
+  document.getElementById('overQuote').textContent = 'Officer Ethan: "' + q + '"';
   document.getElementById('overBest').textContent = isNew ? '🏆 New personal best!' : `Best: ${best} Bud Lights`;
   document.getElementById('bestStart').textContent = best;
   if (reason === 'busted') { sfx.bust(); say(q); } else sfx.end();
@@ -1250,18 +1187,10 @@ function render() {
   }
 
   // entities sorted by y
-  const segs = segPositions();
   const draws = [];
-  const bobBase = gus.walk;
-  for (let i = segs.length - 1; i >= 0; i--) {
-    const p = segs[i];
-    const bob = Math.sin(bobBase - i * 0.9) * 3;
-    const drunkSway = d > 0 ? Math.sin(T * 3 + i) * d * 0.4 : 0;
-    if (i === 0) draws.push({ y: p.y + 0.5, f: () => drawHead(ctx, p.x + drunkSway, p.y, gus.face, bob, d, T, gus.hicLift) });
-    else if (i === segs.length - 1) draws.push({ y: p.y, f: () => drawTail(ctx, p.x + drunkSway, p.y, bob) });
-    else { const col = SEG_COLORS[i]; draws.push({ y: p.y, f: () => drawSegment(ctx, p.x + drunkSway, p.y, col[0], col[1], bob) }); }
-  }
-  if (tj.active) draws.push({ y: tj.y, f: () => drawTJ(ctx, tj.x, tj.y, tj.face, T, tj.moving) });
+  const drunkSway = d > 0 ? Math.sin(T * 1.7) * d * 0.5 : 0;
+  draws.push({ y: gus.y, f: () => drawDude(ctx, gus.x + drunkSway, gus.y, gus.face, gus.walk, d, T, gus.hicLift, Math.hypot(gus.vx, gus.vy) > 25, beers > 0) });
+  if (cop.active) draws.push({ y: cop.y, f: () => drawCop(ctx, cop.x, cop.y, cop.face, T, cop.moving) });
   draws.sort((a, b) => a.y - b.y);
   for (const dr of draws) dr.f();
 
@@ -1276,9 +1205,9 @@ function render() {
   }
   ctx.restore();
 
-  // screen-space: TJ bubble / arrow
-  if (tj.active) {
-    const tsx = (tj.x - camX) * zoom + vw / 2, tsy = (tj.y - camY) * zoom + vh / 2;
+  // screen-space: Ethan bubble / arrow
+  if (cop.active) {
+    const tsx = (cop.x - camX) * zoom + vw / 2, tsy = (cop.y - camY) * zoom + vh / 2;
     const onScreen = tsx > -20 && tsx < vw + 20 && tsy > 0 && tsy - 70 * zoom < vh;
     if (!onScreen) {
       const ax = clamp(tsx, 34, vw - 34), ay = clamp(tsy, 90, vh - 34);
@@ -1288,11 +1217,11 @@ function render() {
       ellipse(ctx, 0, 0, 24, 24); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
       ctx.rotate(ang); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(30, 0); ctx.lineTo(20, -8); ctx.lineTo(20, 8); ctx.fill();
       ctx.restore();
-      ctx.fillStyle = '#fff'; ctx.font = '900 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('TJ', ax, ay);
+      ctx.fillStyle = '#fff'; ctx.font = '900 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('ETHAN', ax, ay);
     }
-    if (tj.textT > 0 && state === 'play') {
-      const bx = clamp(tsx, 20, vw - 20), byTop = onScreen ? tsy - 130 * zoom : clamp(tsy, 110, vh - 40);
-      drawBubble(ctx, 'TJ: ' + tj.text, bx, onScreen ? byTop : (tsy < vh / 2 ? 190 : vh - 60), bx);
+    if (cop.textT > 0 && state === 'play') {
+      const bx = clamp(tsx, 20, vw - 20), byTop = onScreen ? tsy - 170 * zoom : clamp(tsy, 110, vh - 40);
+      drawBubble(ctx, 'Ethan: ' + cop.text, bx, onScreen ? byTop : (tsy < vh / 2 ? 190 : vh - 60), bx);
     }
   }
 
@@ -1326,9 +1255,9 @@ function drawMinimap() {
   }
   ctx.fillStyle = '#e3262b'; ellipse(ctx, mx + gus.x * s, my + gus.y * s, 5, 5); ctx.fill();
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-  if (tj.active) {
+  if (cop.active) {
     ctx.fillStyle = Math.floor(T * 4) % 2 ? '#1f5fc8' : '#fff';
-    ctx.fillRect(mx + tj.x * s - 4, my + tj.y * s - 4, 8, 8);
+    ctx.fillRect(mx + cop.x * s - 4, my + cop.y * s - 4, 8, 8);
   }
   ctx.fillStyle = '#fff'; ctx.font = '800 10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText('● 99s (yellow = cold one ready)', mx, my - 5);
