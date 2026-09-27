@@ -17,6 +17,9 @@
     justify-content:space-between;pointer-events:none;gap:8px}
   .pill{background:rgba(20,30,55,.82);color:#fff;border-radius:999px;padding:7px 14px;font-weight:800;font-size:18px;
     font-variant-numeric:tabular-nums;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  #status{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 122px);display:flex;justify-content:center;gap:8px;pointer-events:none;flex-wrap:wrap;padding:0 12px}
+  #status .pill{font-size:15px;padding:6px 12px}
+  #dogp{background:#ffb347;color:#1b2a4a;animation:pulse .5s infinite alternate}
   #tipsy{background:#e0a800;color:#1b2a4a;animation:pulse .6s infinite alternate}
   #time.low{background:#d62828;animation:pulse .5s infinite alternate}
   @keyframes pulse{to{transform:scale(1.08)}}
@@ -51,21 +54,22 @@
 
 <div id="hud" class="hidden">
   <div class="pill" id="time">⏱ 60</div>
-  <div class="pill hidden" id="tipsy">🍺 Tipsy!</div>
-  <div class="pill" id="score">⭐ 0</div>
+    <div class="pill" id="score">⭐ 0</div>
 </div>
+<div id="status"><div class="pill hidden" id="tipsy">🍺 Tipsy!</div><div class="pill hidden" id="dogp">🐕 Get the dog!</div></div>
 <div id="crave" class="hidden"><span id="craveE">🍟</span><div><small id="craveL">Craving</small><b id="craveN">Fish &amp; Chips</b></div></div>
 
 <div id="title" class="overlay">
   <div class="card">
     <h1>Kara &amp; Bryce's <em>London Adventure</em></h1>
-    <p class="sub">Two hungry people. One big city. 60 seconds.</p>
+    <p class="sub">Two hungry people, one wayward dog and 60 seconds.</p>
     <ul class="rules">
       <li><span>👆</span><span>Drag anywhere to walk (arrow keys on a computer)</span></li>
       <li><span>🎯</span><span>Follow the <b>gold arrow</b> to whatever your travel buddy is craving for big points</span></li>
       <li><span>🍩</span><span>Every snack you grab adds time on the clock</span></li>
       <li><span>🚌</span><span>Mind the buses &amp; black cabs!</span></li>
-      <li><span>🍺</span><span>Grab a pint and you'll stumble sideways for a bit!</span></li>
+      <li><span>🍺</span><span>Pop into a pub for a pint and you'll stumble sideways for a bit!</span></li>
+      <li><span>🐕</span><span>The dog loves to wander off. Go back and fetch it, because snacks are half points until you do!</span></li>
     </ul>
     <p class="sub"><b>Who are you playing as?</b></p>
     <button id="startKara">Play as Kara</button>
@@ -108,11 +112,33 @@ const FOODS = [
   ['🍟', 'Fish & Chips'], ['🥧', 'Pie & Mash'], ['🥯', 'Salt Beef Bagel'], ['🍛', 'Chicken Tikka'],
   ['🥚', 'Scotch Egg'], ['🍳', 'Full English'], ['🫖', 'Cream Tea'], ['🍩', 'Custard Doughnut'],
   ['🧀', 'Cheese Toastie'], ['🥟', 'Dumplings'], ['🍜', 'Ramen'], ['🌮', 'Tacos'], ['🍓', 'Eton Mess'],
-  ['🥓', 'Bacon Butty'], ['🍦', 'Mr Whippy'], ['🥙', 'Kebab'], ['🍺', 'A Cheeky Pint'], ['🍰', 'Victoria Sponge'],
+  ['🥓', 'Bacon Butty'], ['🍦', 'Mr Whippy'], ['🥙', 'Kebab'], ['🍰', 'Victoria Sponge'],
   ['🦪', 'Oysters'], ['🥩', 'Sunday Roast'], ['🌭', 'Banger Butty'], ['🥐', 'Sausage Roll'],
 ];
-const YUMS = ['Proper lovely!', 'Smashing!', 'Brilliant!', 'Cheeky!', 'Mmm, innit good', 'Absolutely peng', 'Top notch!', 'Blimey!'];
-const WANTS = ['Ooh, I fancy', 'Now I want', "I'm dying for", 'Take me to'];
+const YUMS = ['Proper lovely!', 'Smashing!', 'That slapped. Politely.', 'Better than my mum\'s. Don\'t tell her.',
+  'Diet starts Monday', 'Worth the calories', 'Ten out of ten, no notes', 'I\'d queue for that. And I hate queues',
+  'Chef\'s kiss, innit', 'We\'re not sharing next time', 'My trousers are filing a complaint', 'Is this love or just gravy?'];
+const WANTS = ['Ooh, I fancy', 'Now I simply must have', "I'd sell you for", 'Non-negotiable:', 'Hear me out:', 'My soul requires'];
+const PINT_LINES = ['Cheers! 🍻', 'Just the one, eh?', 'Hydration is overrated', 'You\'re walking like a shopping trolley',
+  'Steady on, Shakespeare', 'Pint o\'clock, apparently', 'Is the pavement moving or is it you?', 'Classy. Very classy.'];
+const MORE_PINTS = ['ANOTHER one?!', 'This is a pub crawl now, isn\'t it', 'I\'m putting you in a cab', 'You\'re legally a pirate now'];
+const SOBER = ["Right, you're sober. Ish.", 'Welcome back to straight lines', 'The pavement has stopped moving'];
+const BUMP = ['Look RIGHT! It\'s London!', 'That bus had a timetable to keep!', 'You nearly became a pancake', 'Mind the… everything!',
+  'The cabbie had OPINIONS', 'Green Cross Code, please!'];
+const DOG_GONE = ['The dog\'s done a runner!', 'Where\'s the dog?!', 'Dog\'s off to see the King', 'Our dog has abandoned us for a pigeon',
+  'The dog has left the chat'];
+const DOG_NAG = ['Um, the dog?', 'We can\'t go home without the dog', 'Priorities: dog, THEN doughnuts', 'Follow the 🐕 arrow!',
+  'The dog is our child now. Go get it.'];
+const DOG_FOUND = ['Who\'s a good pup?!', 'Family reunited 🥹', 'Never scare us like that again', 'Dog secured. Snacking resumes.',
+  'You smell of fox. Lovely.'];
+const DOG_EXCUSE = ['🐿️ Squirrel!', '🦆 Duck!', '🍗 Smells chicken!', '🐕 New friend!', '🦊 Fox!'];
+const PUBS = ['The Red Lion', 'The Crown', "The King's Head", "The Nag's Head", 'The Rose & Crown', 'The White Hart',
+  'The Black Horse', 'The Prospect of Whitby', 'The Lamb & Flag', 'The George', 'The Anchor'];
+const NUM_PUBS = 4;
+const LOOK = {
+  Kara: { shirt: '#ef5a8a', hair: '#6b3b1f', skin: '#f2c7a5', long: true },
+  Bryce: { shirt: '#2f6fdf', hair: '#2b1d12', skin: '#e6b48f', long: false },
+};
 
 // ---------- map grid ----------
 const grid = new Uint8Array(N * N);
@@ -403,7 +429,7 @@ window.addEventListener('resize', resize); resize();
 const START = { x: 21 * T, y: 13 * T };
 let me = 'Kara', them = 'Bryce';
 let state = 'title', clock = 0, left = GAME_TIME, score = 0, eaten = [];
-let p1, p2, trail, stands, crave, vehicles, pigeons, floaters, bubble;
+let p1, p2, dog, trail, stands, crave, vehicles, pigeons, floaters, bubble;
 let best = 0;
 try { best = +localStorage.getItem('snackcrawl-best') || 0; } catch (e) {}
 
@@ -414,7 +440,9 @@ function reset() {
   left = GAME_TIME; score = 0; eaten = []; floaters = []; bubble = null;
   stands = [];
   for (let i = 0; i < NUM_STANDS; i++) stands.push(spawnStand(250));
+  for (let i = 0; i < NUM_PUBS; i++) stands.push(spawnStand(200, true));
   newCrave();
+  dog = { x: START.x - 55, y: START.y + 6, state: 'follow', tx: 0, ty: 0, phase: 0, face: 1, moving: false, timer: rand(9, 14), sniff: 0, nag: 0 };
   vehicles = [];
   for (const r of [0, 8, 16, 24, 32, 40]) {
     addVehicle(1, 0, 0, (r + .5) * T);   // eastbound (drive on the left!)
@@ -433,26 +461,31 @@ function addVehicle(dx, dy, x, y) {
   vehicles.push(v);
 }
 
-function spawnStand(minDist = 350) {
-  const used = new Set(stands.map(s => s.food));
-  const choices = FOODS.filter(f => !used.has(f));
-  const pint = FOODS.find(f => f[0] === '🍺');
-  const food = (!used.has(pint) && Math.random() < .3) ? pint : pick(choices);
+function spawnStand(minDist = 350, pub = false) {
+  let food;
+  if (pub) {
+    const usedPubs = new Set(stands.filter(s => s.pub).map(s => s.food[1]));
+    food = ['🍺', pick(PUBS.filter(n => !usedPubs.has(n)))];
+  } else {
+    const used = new Set(stands.map(s => s.food));
+    food = pick(FOODS.filter(f => !used.has(f)));
+  }
   for (let tries = 0; tries < 400; tries++) {
     const t = pick(spawnTiles), x = (t % N + .5) * T, y = ((t / N) | 0) * T + T / 2;
     const pt = { x, y };
     if (p1 && dist(pt, p1) < minDist) continue;
-    if (stands.some(s => dist(s, pt) < 280)) continue;
-    return { x, y, food, born: clock };
+    if (stands.some(s => dist(s, pt) < 240)) continue;
+    return { x, y, food, pub, born: clock };
   }
   const t = pick(spawnTiles);
-  return { x: (t % N + .5) * T, y: ((t / N) | 0) * T + T / 2, food, born: clock };
+  return { x: (t % N + .5) * T, y: ((t / N) | 0) * T + T / 2, food, pub, born: clock };
 }
 
 function newCrave() {
   // prefer something not right next to us
-  const far = stands.filter(s => dist(s, p1) > 300);
-  crave = pick(far.length ? far : stands);
+  const foodStands = stands.filter(s => !s.pub);
+  const far = foodStands.filter(s => dist(s, p1) > 300);
+  crave = pick(far.length ? far : foodStands);
   $('craveE').textContent = crave.food[0];
   $('craveN').textContent = crave.food[1];
   if (state === 'play') say(`${pick(WANTS)} ${crave.food[1]}!`, 2.2);
@@ -531,7 +564,7 @@ function update(dt) {
   if (p1.inv > 0) p1.inv -= dt;
   if (p1.drunk > 0) {
     p1.drunk -= dt;
-    if (p1.drunk <= 0) { p1.drunk = 0; p1.pints = 0; if (state === 'play') say(pick(["Right, I'm sober now", 'Head feels clearer!'])); }
+    if (p1.drunk <= 0) { p1.drunk = 0; p1.pints = 0; if (state === 'play') say(pick(SOBER)); }
     else if (state === 'play' && p1.stun <= 0) {
       // sway sideways relative to where you're heading (left/right if standing still)
       const lvl = Math.min(3, p1.pints), l = Math.hypot(ix, iy);
@@ -565,6 +598,7 @@ function update(dt) {
   p2.x += (tp.x - p2.x) * k; p2.y += (tp.y - p2.y) * k;
   const m2 = Math.hypot(p2.x - p2ox, p2.y - p2oy);
   p2.moving = m2 > .3; if (p2.moving) p2.phase += m2 * .18;
+  updateDog(dt);
 
   // traffic
   for (const v of vehicles) {
@@ -579,7 +613,7 @@ function update(dt) {
       p1.kx = ax * 230 + v.dx * 150; p1.ky = ay * 230 + v.dy * 150;
       p1.stun = .8; p1.inv = 1.8; left = Math.max(0, left - 3);
       floater(p1.x, p1.y - 40, v.bus ? 'Oi! −3s 🚌' : 'Oi! −3s 🚕', '#ff4d4d');
-      say(pick(['Careful!!', 'Mind the bus!', 'Look right!', 'Blimey, that was close!']));
+      say(pick(BUMP), 2);
       beep(330, .12, 'square', .06); setTimeout(() => beep(260, .25, 'square', .06), 120);
       try { navigator.vibrate && navigator.vibrate(80); } catch (e) {}
     }
@@ -590,19 +624,19 @@ function update(dt) {
     for (let i = 0; i < stands.length; i++) {
       const s = stands[i];
       if (dist(s, p1) < 30) {
-        const isCrave = s === crave;
-        const pts = isCrave ? 300 : 100, bonus = isCrave ? 4 : 2;
+        const isCrave = s === crave, noDog = dog.state === 'lost';
+        let pts = isCrave ? 300 : 100; const bonus = isCrave ? 4 : 2;
+        if (noDog) pts /= 2;
         score += pts; left += bonus; eaten.push(s.food[0]);
-        floater(s.x, s.y - 40, `+${pts}  +${bonus}s`, isCrave ? '#ffd23f' : '#fff');
+        floater(s.x, s.y - 40, noDog ? `+${pts} (½ — find the dog!)` : `+${pts}  +${bonus}s`, isCrave ? '#ffd23f' : '#fff');
         if (isCrave) { beep(660, .1, 'triangle', .08); setTimeout(() => beep(880, .1, 'triangle', .08), 90); setTimeout(() => beep(1320, .18, 'triangle', .08), 180); }
         else { beep(520, .08, 'triangle', .07); setTimeout(() => beep(780, .12, 'triangle', .07), 80); }
-        stands[i] = spawnStand();
-        if (s.food[0] === '🍺') {
+        stands[i] = spawnStand(350, s.pub);
+        if (s.pub) {
           p1.pints++; p1.drunk = 8; p1.lurch = .4;
-          say(pick(['Cheers! 🍻', 'Steady on!', 'Just the one, eh?', "You're wobbling!"]), 2);
-          if (isCrave) newCrave();
+          say(pick(p1.pints > 1 ? MORE_PINTS : PINT_LINES), 2.2);
         } else if (isCrave) newCrave();
-        else say(pick(YUMS));
+        else say(pick(YUMS), 2);
       }
     }
   }
@@ -630,6 +664,60 @@ function update(dt) {
   if (bubble) { bubble.t -= dt; if (bubble.t <= 0) bubble = null; }
 }
 
+// find a spot the dog can trot to in a straight line
+function dogTarget(minD, maxD) {
+  for (let i = 0; i < 80; i++) {
+    const a = rand(0, 6.283), d = rand(minD, maxD), tx = dog.x + Math.cos(a) * d, ty = dog.y + Math.sin(a) * d;
+    let ok = true;
+    for (let k = 1; k <= d / 12 && ok; k++) if (blocked(dog.x + Math.cos(a) * k * 12, dog.y + Math.sin(a) * k * 12, 7)) ok = false;
+    if (ok && !blocked(tx, ty, 7)) return { x: tx, y: ty };
+  }
+  return { x: dog.x, y: dog.y };
+}
+
+function updateDog(dt) {
+  const d = dog, ox = d.x, oy = d.y;
+  if (d.state === 'follow') {
+    const tp = trailPoint(62), k = Math.min(1, dt * 8);
+    d.x += (tp.x - d.x) * k; d.y += (tp.y - d.y) * k;
+    if (state === 'play') {
+      d.timer -= dt;
+      if (d.timer <= 0) {
+        d.state = 'lost'; d.nag = 4; d.sniff = 0;
+        const t = dogTarget(260, 420); d.tx = t.x; d.ty = t.y;
+        floater(d.x, d.y - 26, pick(DOG_EXCUSE), '#ffb347');
+        say(pick(DOG_GONE), 2.2);
+        beep(900, .08, 'square', .04); setTimeout(() => beep(1100, .1, 'square', .04), 110);
+      }
+    }
+  } else {
+    const dx = d.tx - d.x, dy = d.ty - d.y, l = Math.hypot(dx, dy);
+    if (l > 4) {
+      const sp = d.sniff > 0 ? 50 : 150;
+      const nx = d.x + dx / l * sp * dt; if (!blocked(nx, d.y, 7)) d.x = nx;
+      const ny = d.y + dy / l * sp * dt; if (!blocked(d.x, ny, 7)) d.y = ny;
+      if (Math.hypot(d.x - ox, d.y - oy) < sp * dt * .3) { d.tx = d.x; d.ty = d.y; }
+    } else {
+      d.sniff -= dt;
+      if (d.sniff <= 0) { d.sniff = rand(1.5, 3); const t = dogTarget(20, 70); d.tx = t.x; d.ty = t.y; }
+    }
+    if (state === 'play') {
+      d.nag -= dt;
+      if (d.nag <= 0) { d.nag = rand(5, 7); say(pick(DOG_NAG), 2.2); }
+      if (Math.hypot(p1.x - d.x, p1.y - d.y) < 34) {
+        d.state = 'follow'; d.timer = rand(14, 22);
+        score += 150; left += 2;
+        floater(d.x, d.y - 30, '+150 Good pup! 🐶', '#7CFC9A');
+        say(pick(DOG_FOUND), 2.2);
+        beep(700, .08, 'triangle', .07); setTimeout(() => beep(1050, .14, 'triangle', .07), 90);
+      }
+    }
+  }
+  const mv = Math.hypot(d.x - ox, d.y - oy);
+  d.moving = mv > .2; if (d.moving) d.phase += mv * .35;
+  if (Math.abs(d.x - ox) > .15) d.face = d.x > ox ? 1 : -1;
+}
+
 function trailPoint(d) {
   let acc = 0, ax = p1.x, ay = p1.y;
   for (let i = trail.length - 1; i >= 0; i--) {
@@ -641,7 +729,8 @@ function trailPoint(d) {
 }
 
 // ---------- drawing ----------
-function nameTag(x, y, name) {
+function nameTag(x, y, name, dy = 0) {
+  y += dy;
   ctx.font = `800 11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,25,40,.85)'; ctx.lineJoin = 'round';
   ctx.strokeText(name, x, y + 24); ctx.fillStyle = '#fff'; ctx.fillText(name, x, y + 24);
@@ -662,6 +751,27 @@ function drawPerson(x, y, shirt, hair, skin, phase, moving, longHair, tilt = 0) 
   ctx.fillStyle = '#222'; ctx.fillRect(x - 4, y - 21 - bob, 2, 2.5); ctx.fillRect(x + 2, y - 21 - bob, 2, 2.5);
   if (tilt) { ctx.fillStyle = 'rgba(255,90,90,.45)'; circ(ctx, x - 5, y - 17 - bob, 2.5); ctx.fill(); circ(ctx, x + 5, y - 17 - bob, 2.5); ctx.fill(); }
   ctx.restore();
+}
+
+function drawDog(d) {
+  const x = d.x, y = d.y, f = d.face, leg = d.moving ? Math.sin(d.phase) * 3 : 0;
+  const wag = Math.sin(clock * (d.moving ? 18 : 10)) * 3;
+  ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 8, 12, 3.5, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#6b4220';
+  ctx.fillRect(x - 8, y + 1, 3, 7 + leg); ctx.fillRect(x - 3, y + 1, 3, 7 - leg);
+  ctx.fillRect(x + 3, y + 1, 3, 7 + leg); ctx.fillRect(x + 7, y + 1, 3, 7 - leg);
+  ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - f * 9, y - 2); ctx.lineTo(x - f * 15, y - 9 + wag); ctx.stroke();
+  ctx.fillStyle = '#8b5a2b'; ctx.beginPath(); ctx.ellipse(x, y - 1, 11, 6, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#c8102e'; ctx.fillRect(x + f * 6 - 2, y - 6, 4, 5);
+  ctx.fillStyle = '#8b5a2b'; circ(ctx, x + f * 10, y - 8, 5.5); ctx.fill();
+  ctx.fillStyle = '#a8703a'; ctx.beginPath(); ctx.ellipse(x + f * 15, y - 6, 4, 2.8, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#111'; circ(ctx, x + f * 18.5, y - 7, 1.6); ctx.fill(); circ(ctx, x + f * 11, y - 10, 1.1); ctx.fill();
+  ctx.fillStyle = '#5e3a1a'; ctx.beginPath(); ctx.ellipse(x + f * 7, y - 8, 2.4, 4.8, f * .3, 0, 6.283); ctx.fill();
+  if (d.state === 'lost' && state === 'play') {
+    ctx.font = `800 13px ${FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = '#ffb347';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(20,25,40,.85)'; ctx.strokeText('?!', x, y - 20); ctx.fillText('?!', x, y - 20);
+  }
 }
 
 function drawVehicle(v) {
@@ -698,7 +808,7 @@ function drawStand(s) {
   ctx.fillStyle = '#9c6a3f'; ctx.fillRect(-18, -4, 36, 4);
   ctx.fillStyle = '#333'; circ(ctx, -11, 13, 4); ctx.fill(); circ(ctx, 11, 13, 4); ctx.fill();
   ctx.fillStyle = '#ddd'; ctx.fillRect(-17, -20, 2, 16); ctx.fillRect(15, -20, 2, 16);
-  for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#fff' : (isCrave ? '#e0a800' : '#c8102e'); ctx.fillRect(-21 + i * 7, -26, 7, 9); }
+  for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? (s.pub ? '#e0b64a' : '#fff') : (isCrave ? '#e0a800' : s.pub ? '#1e5b3a' : '#c8102e'); ctx.fillRect(-21 + i * 7, -26, 7, 9); }
   ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(-21, -18, 42, 2);
   const bob = Math.sin(clock * 3 + s.x) * 2;
   ctx.font = `26px ${EMOJI_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -757,10 +867,12 @@ function render() {
   // y-sorted actors
   const actors = [];
   for (const st of stands) if (onScreen(st, 80)) actors.push({ y: st.y, f: () => drawStand(st) });
-  actors.push({ y: p2.y, f: () => { drawPerson(p2.x, p2.y, '#ef5a8a', '#6b3b1f', '#f2c7a5', p2.phase, p2.moving, true); nameTag(p2.x, p2.y, them); } });
+  const L1 = LOOK[me], L2 = LOOK[them];
+  actors.push({ y: dog.y, f: () => drawDog(dog) });
+  actors.push({ y: p2.y, f: () => { drawPerson(p2.x, p2.y, L2.shirt, L2.hair, L2.skin, p2.phase, p2.moving, L2.long); nameTag(p2.x, p2.y, them, Math.abs(p2.y - p1.y) < 14 && Math.abs(p2.x - p1.x) < 60 ? 13 : 0); } });
   actors.push({ y: p1.y, f: () => {
     if (p1.inv > 0 && Math.floor(clock * 12) % 2) ctx.globalAlpha = .45;
-    drawPerson(p1.x, p1.y, '#2f6fdf', '#2b1d12', '#e6b48f', p1.phase, p1.moving, false, p1.drunk > 0 ? Math.sin(clock * 3.3) * .3 : 0);
+    drawPerson(p1.x, p1.y, L1.shirt, L1.hair, L1.skin, p1.phase, p1.moving, L1.long, p1.drunk > 0 ? Math.sin(clock * 3.3) * .3 : 0);
     nameTag(p1.x, p1.y, me);
     ctx.globalAlpha = 1;
     if (p1.stun > 0) {
@@ -794,6 +906,7 @@ function render() {
     const px = (p1.x - camX) * zoom, py = (p1.y - camY) * zoom;
     const L = 30, R = vw - 30, Tp = 118, B = vh - 30;
     const list = stands.slice().sort((a, b) => (a === crave) - (b === crave));
+    if (dog.state === 'lost') list.push({ x: dog.x, y: dog.y, food: ['🐕'], isDog: true });
     for (const st of list) {
       const sx2 = (st.x - camX) * zoom, sy2 = (st.y - camY) * zoom;
       if (sx2 > 0 && sx2 < vw && sy2 > 60 && sy2 < vh) continue;
@@ -801,12 +914,12 @@ function render() {
       const tx = dx > 0 ? (R - px) / dx : dx < 0 ? (L - px) / dx : Infinity;
       const ty = dy > 0 ? (B - py) / dy : dy < 0 ? (Tp - py) / dy : Infinity;
       const t = Math.min(tx, ty, 1), ex = px + dx * t, ey = py + dy * t, ang = Math.atan2(dy, dx);
-      const isC = st === crave, r = isC ? 19 : 13;
+      const isC = st === crave || st.isDog, r = isC ? 19 : 13;
       ctx.save(); ctx.translate(ex, ey);
       if (isC) ctx.scale(1 + Math.sin(clock * 6) * .06, 1 + Math.sin(clock * 6) * .06);
       ctx.globalAlpha = isC ? 1 : .75;
       ctx.save(); ctx.rotate(ang);
-      ctx.fillStyle = isC ? '#ffd23f' : '#fff'; ctx.strokeStyle = '#1b2a4a'; ctx.lineWidth = 2;
+      ctx.fillStyle = st.isDog ? '#ffb347' : isC ? '#ffd23f' : st.pub ? '#b7e4c7' : '#fff'; ctx.strokeStyle = '#1b2a4a'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(r + 10, 0); ctx.lineTo(r - 2, -8); ctx.lineTo(r - 2, 8); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.restore();
       circ(ctx, 0, 0, r); ctx.fill(); ctx.stroke();
@@ -831,6 +944,7 @@ function hud() {
   if (ts !== lastT) { $('time').textContent = ts; $('time').classList.toggle('low', t <= 10); lastT = ts; }
   if (ss !== lastS) { $('score').textContent = ss; lastS = ss; }
   $('tipsy').classList.toggle('hidden', !(p1.drunk > 0 && state === 'play'));
+  $('dogp').classList.toggle('hidden', !(dog.state === 'lost' && state === 'play'));
   if (p1.drunk > 0) $('tipsy').textContent = p1.pints > 1 ? `🍺×${p1.pints} Tipsy!` : '🍺 Tipsy!';
 }
 
@@ -848,7 +962,7 @@ function start(who) {
 function endGame() {
   state = 'over';
   hud();
-  $('tipsy').classList.add('hidden');
+  $('tipsy').classList.add('hidden'); $('dogp').classList.add('hidden');
   joy.active = false;
   say("I'm stuffed!", 3);
   beep(523, .15, 'triangle'); setTimeout(() => beep(392, .15, 'triangle'), 150); setTimeout(() => beep(262, .35, 'triangle'), 300);
