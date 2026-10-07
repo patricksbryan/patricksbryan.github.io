@@ -50,7 +50,6 @@
   .cast li { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; max-width: 120px; }
   .cast canvas { width: 100%; max-width: 100px; aspect-ratio: 1; border-radius: 14px; border: 2px solid var(--wood); }
   .cast span { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); font-weight: 900; text-align: center; }
-  .cast small { font-size: 12px; color: var(--muted); font-weight: 700; text-align: center; line-height: 1.2; }
   .how { margin: 0; font-size: 16px; line-height: 1.4; color: var(--muted); text-align: center; text-wrap: balance; font-weight: 700; }
   .card button { align-self: center; font-family: var(--display); font-size: 26px; color: var(--ink); background: var(--gold); border: 3px solid var(--wood); border-radius: 14px; padding: 8px 34px; cursor: pointer; box-shadow: 0 5px 0 var(--wood); }
   .card button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood); }
@@ -72,6 +71,7 @@
     <svg class="heart" viewBox="0 0 24 22"><path d="M12 20.5S3.8 15.2 1.9 10.4C.4 6.6 2.6 2.4 6.6 2.1c2.3-.2 4.1 1.1 5.4 3 1.3-1.9 3.1-3.2 5.4-3 4 .3 6.2 4.5 4.7 8.3C20.2 15.2 12 20.5 12 20.5z"/></svg>
   </div>
   <div class="pill"><span class="lbl">Time</span><b id="time">0:00</b></div>
+  <div class="pill" id="beerPill"><span class="lbl">Beers</span><b id="beers">0</b></div>
   <button id="snd" class="pill" type="button">Sound on</button>
 </div>
 <div id="banner"></div>
@@ -81,11 +81,11 @@
     <h1>Kress</h1>
     <p class="sub">Find the gold star</p>
     <ul class="cast">
-      <li><canvas id="castYou" width="160" height="160"></canvas><span>You</span><small>On a mission</small></li>
-      <li><canvas id="castChad" width="160" height="160"></canvas><span>Chad</span><small>Hungry. Shirtless.</small></li>
-      <li><canvas id="castBeans" width="160" height="160"></canvas><span>Beans</span><small>Very hungover</small></li>
+      <li><canvas id="castYou" width="160" height="160"></canvas><span>You</span></li>
+      <li><canvas id="castChad" width="160" height="160"></canvas><span>Chad</span></li>
+      <li><canvas id="castBeans" width="160" height="160"></canvas><span>Beans</span></li>
     </ul>
-    <p class="how">The gold star is hidden somewhere in the house. Don't let Chad or Beans corner you, because they will not stop talking. Drag anywhere to walk, or use the arrow keys or WASD. You get 3 hearts.</p>
+    <p class="how">The gold star is hidden somewhere in the house. Don't let Chad or Beans corner you, because they will not stop talking. Grab the beers along the way if you want, but each one makes you a little tipsier. Drag anywhere to walk, or use the arrow keys or WASD. You get 3 hearts.</p>
     <button id="play" type="button">Play</button>
     <p class="small" id="bestLine"></p>
   </div>
@@ -556,6 +556,20 @@ function drawStar(c, x, y, r, rot) {
   c.closePath();
 }
 
+function drawBeer(c, x, y, t) {
+  c.save();
+  const g = c.createRadialGradient(x, y, 2, x, y, 26); g.addColorStop(0, 'rgba(255,200,80,.35)'); g.addColorStop(1, 'rgba(255,200,80,0)');
+  c.fillStyle = g; c.fillRect(x - 26, y - 26, 52, 52);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.beginPath(); c.ellipse(x, y + 12, 8, 3, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#d9dde2'; rr(c, x - 7, y - 12, 14, 24, 3); c.fill();
+  c.fillStyle = '#d4a12a'; c.fillRect(x - 7, y - 7, 14, 14);
+  c.fillStyle = '#fff'; c.font = '900 7px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('BEER', x, y);
+  c.strokeStyle = 'rgba(40,25,15,.6)'; c.lineWidth = 1.5; rr(c, x - 7, y - 12, 14, 24, 3); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(x - 5, y - 10, 2, 20);
+  c.fillStyle = `rgba(255,250,210,${.5 + .5 * Math.sin(t * 4)})`; circ(c, x + 9, y - 12, 1.8); c.fill();
+  c.restore();
+}
+
 function wrapText(c, text, maxW) {
   const words = text.split(' '), lines = []; let line = '';
   for (const w of words) { const test = line ? line + ' ' + w : w; if (c.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test; }
@@ -591,6 +605,8 @@ function tone(f, dur, type, vol, when, slide) {
 }
 function babble(base, n, vol) { for (let k = 0; k < n; k++) tone(base * rand(.85, 1.35), .055, 'square', vol, k * .075); }
 function sndStar() { [523, 659, 784, 1047].forEach((f, k) => tone(f, .25, 'triangle', .09, k * .09)); }
+function sndBeer() { tone(380, .07, 'triangle', .08, 0, 1.6); tone(900, .18, 'sine', .03, .05, .7); }
+function sndHic() { tone(520, .09, 'sine', .07, 0, 1.8); }
 function sndCaught() { tone(330, .35, 'sawtooth', .06, 0, .5); tone(220, .45, 'sawtooth', .05, .15, .5); }
 function setSnd() { $('snd').textContent = soundOn ? 'Sound on' : 'Sound off'; }
 $('snd').addEventListener('click', () => { soundOn = !soundOn; store.set('kress.snd', soundOn); setSnd(); if (soundOn) tone(660, .1, 'triangle', .06); });
@@ -598,7 +614,7 @@ setSnd();
 
 /* ---------- Game state ---------- */
 const PLAYER_SPEED = 178, HB = 11, HINT_AFTER = 20;
-let state = 'menu', level = 1, hearts = 3, elapsed = 0, player, npcs, star, cam = { x: 0, y: 0 }, playerField = null, fieldT = 0, lastCatch = null, bannerT = 0, hinted = false, gameT = 0;
+let beers = [], beerCount = 0, tipsy = 0, hicT = 4, hicBubble = 0, state = 'menu', level = 1, hearts = 3, elapsed = 0, player, npcs, star, cam = { x: 0, y: 0 }, playerField = null, fieldT = 0, lastCatch = null, bannerT = 0, hinted = false, gameT = 0;
 
 const tileIdx = (x, y) => Math.floor(y / T) * GW + Math.floor(x / T);
 const tileCenter = i => ({ x: (i % GW) * T + T / 2, y: Math.floor(i / GW) * T + T / 2 });
@@ -661,6 +677,15 @@ function startLevel() {
     makeNpc(CHAD, cTile, 128 * boost, 78, 7 * T),
     makeNpc(BEANS, bTile, 112 * boost, 62, 8.5 * T)
   ];
+  const used = new Set([pTile, sTile, cTile, bTile]);
+  const beerTiles = shuffle(tiles.filter(i => dP[i] >= 3 && dS[i] >= 2));
+  beers = []; const beerRooms = new Set();
+  for (const i of beerTiles) {
+    if (beers.length >= 6) break;
+    if (used.has(i) || beerRooms.has(roomOf[i])) continue;
+    beerRooms.add(roomOf[i]); const bc = tileCenter(i); beers.push({ x: bc.x, y: bc.y, ph: rand(0, 6) });
+  }
+  tipsy = 0; beerCount = 0; hicT = rand(3, 6); hicBubble = 0; $('beers').textContent = 0;
   playerField = bfs(pTile); fieldT = 0;
   elapsed = 0; hinted = false;
   cam.x = player.x - W / Z / 2; cam.y = player.y - H / Z / 2;
@@ -802,7 +827,7 @@ function lose() {
 }
 function win() {
   state = 'won'; sndStar();
-  $('wonMsg').textContent = 'You found the gold star in ' + fmt(elapsed) + ' with ' + hearts + (hearts === 1 ? ' heart' : ' hearts') + ' left.';
+  $('wonMsg').textContent = 'You found the gold star in ' + fmt(elapsed) + ' with ' + hearts + (hearts === 1 ? ' heart' : ' hearts') + ' left' + (beerCount ? ', after ' + beerCount + (beerCount === 1 ? ' beer.' : ' beers.') : '.');
   level++; saveBest();
   show('won'); setTimeout(() => $('next').focus(), 50);
 }
@@ -816,6 +841,18 @@ function update(dt) {
   elapsed += dt;
   $('time').textContent = fmt(elapsed);
   const v = inputVec();
+  if (tipsy > 0) {
+    // tipsy: the direction you walk drifts back and forth a little
+    const a = tipsy * (.45 * Math.sin(gameT * 1.7) + .25 * Math.sin(gameT * 3.3 + 1));
+    const ca = Math.cos(a), sa = Math.sin(a), vx = v.x * ca - v.y * sa; v.y = v.x * sa + v.y * ca; v.x = vx;
+    tipsy = Math.max(0, tipsy - dt * .01);
+    hicT -= dt; if (hicBubble > 0) hicBubble -= dt;
+    if (hicT <= 0) { hicT = rand(4, 9) / (.5 + tipsy); if (tipsy > .25) { hicBubble = 1; sndHic(); } }
+  }
+  for (let k = beers.length - 1; k >= 0; k--) if (dist(player, beers[k]) < 26) {
+    beers.splice(k, 1); beerCount++; tipsy = Math.min(1, tipsy + .2); $('beers').textContent = beerCount; sndBeer();
+    banner(beerCount === 1 ? 'Cheers! Feeling a little loose.' : tipsy >= .8 ? 'Okay, pretty tipsy now.' : 'Another one. Feeling tipsy.', 1.8);
+  }
   player.moving = Math.hypot(v.x, v.y) > .05;
   if (player.moving) { move(player, v.x * PLAYER_SPEED * dt, v.y * PLAYER_SPEED * dt); player.t += dt; if (Math.abs(v.x) > .1) player.fx = clamp(v.x, -1, 1); }
   if (player.inv > 0) player.inv -= dt;
@@ -842,7 +879,9 @@ function render() {
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.fillStyle = '#6fa35a'; c.fillRect(0, 0, W, H);
   if (!grid) return;
-  c.setTransform(DPR * Z, 0, 0, DPR * Z, -cam.x * DPR * Z, -cam.y * DPR * Z);
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (tipsy > 0) { c.translate(W / 2, H / 2); c.rotate(tipsy * .045 * Math.sin(gameT * 1.1)); const zs = 1 + tipsy * .025 * Math.sin(gameT * .8); c.scale(zs, zs); c.translate(-W / 2, -H / 2); }
+  c.scale(Z, Z); c.translate(-cam.x, -cam.y);
   const vw = W / Z, vh = H / Z;
   // grass texture
   c.fillStyle = 'rgba(40,90,30,.25)';
@@ -867,11 +906,18 @@ function render() {
   c.fillStyle = '#ffc62b'; c.fill(); c.strokeStyle = '#a86a00'; c.lineWidth = 2.5; c.stroke();
   c.fillStyle = 'rgba(255,255,255,.7)'; circ(c, star.x - 4, star.y - 5 + sb, 3); c.fill();
   for (let k = 0; k < 3; k++) { const a = gameT * 1.4 + k * 2.1; c.fillStyle = `rgba(255,240,160,${.5 + .5 * Math.sin(gameT * 5 + k)})`; circ(c, star.x + Math.cos(a) * 26, star.y + sb + Math.sin(a) * 20, 2); c.fill(); }
+  for (const b of beers) drawBeer(c, b.x, b.y + Math.sin(gameT * 2.5 + b.ph) * 2, gameT + b.ph);
   // people, back to front
   const people = [{ e: player, look: LOOK_YOU, talk: false }, ...npcs.map(n => ({ e: n, look: n.def.look, talk: n.bubbleT > 0 }))].sort((a, b) => a.e.y - b.e.y);
   for (const p of people) {
     if (p.e === player && player.inv > 0 && Math.floor(gameT * 10) % 2) continue;
-    drawPerson(c, p.e.x, p.e.y + 12, p.look, p.e.t, p.e.moving, p.e.fx, 1, p.talk);
+    if (p.e === player && tipsy > 0) {
+      c.save(); c.translate(p.e.x, p.e.y + 12); c.rotate(tipsy * .12 * Math.sin(gameT * 2.2));
+      drawPerson(c, 0, 0, p.look, p.e.t, p.e.moving, p.e.fx, 1, false);
+      c.fillStyle = `rgba(235,80,90,${tipsy * .55})`; circ(c, -6.5 + p.e.fx * 1.6, -47, 2.6); c.fill(); circ(c, 6.5 + p.e.fx * 1.6, -47, 2.6); c.fill();
+      c.restore();
+      if (hicBubble > 0) { c.save(); c.globalAlpha = Math.min(1, hicBubble * 3); c.fillStyle = '#fff'; c.strokeStyle = '#2a1d15'; c.lineWidth = 3; c.font = '900 14px Nunito, sans-serif'; c.textAlign = 'center'; c.strokeText('*hic*', p.e.x + 16, p.e.y - 50 - (1 - hicBubble) * 10); c.fillText('*hic*', p.e.x + 16, p.e.y - 50 - (1 - hicBubble) * 10); c.restore(); }
+    } else drawPerson(c, p.e.x, p.e.y + 12, p.look, p.e.t, p.e.moving, p.e.fx, 1, p.talk);
     if (p.e.stun > 0 || p.e.hold > 0) { c.fillStyle = 'rgba(255,255,255,.9)'; c.font = '900 14px Nunito, sans-serif'; c.textAlign = 'center'; c.fillText(p.e.hold > 0 ? '?' : '...', p.e.x + 14, p.e.y - 52); }
   }
   for (const n of npcs) if (n.bubbleT > 0) drawBubble(c, n.x, n.y - 56, n.bubble, n.def.color, Math.min(1, n.bubbleT * 3));
