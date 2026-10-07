@@ -326,10 +326,10 @@ let hearts = 3, immune = 0, pStun = 0, nextYell = 0, nextWine = 0, released = fa
 let particles = [];
 let best = store.get('windelta.best', 0);
 
-const GAME_NAMES = ['Xbox controller', 'Mario Kart', 'Madden', 'Zelda', 'Halo', 'PlayStation', 'Fortnite', 'Call of Duty', 'Minecraft', 'GoldenEye'];
-const GAME_COLORS = ['#3b3f52', '#e04a3a', '#2f6fd6', '#2aa05a', '#f0f0f0', '#7a3fc0'];
+const GAME_NAMES = ['Xbox controller', 'Xbox', 'Halo', 'Halo 3', 'Halo Infinite', 'Call of Duty', 'Black Ops', 'Modern Warfare'];
+const GAME_COLORS = ['#3b3f52', '#107c10', '#2b2f3a', '#f0f0f0', '#1f6a2e'];
 const HARV_LINES = ['I WENT TO HARVARD!', 'I WENT TO HARVARD!', 'I WENT TO HARVARD!', 'DID I MENTION I WENT TO HARVARD?!', 'HARVARD! I WENT THERE!', 'I WENT TO HARVARD, YOU KNOW!'];
-const WINE_LINES = ['Where are my video games?', 'Has anyone seen my PlayStation?', 'My Zelda was right here...', 'Who took my controller?', 'Ugh. Where is Mario Kart?', 'Where did I leave my games?'];
+const WINE_LINES = ['Where is my Xbox?', 'Has anyone seen my Call of Duty?', 'I need to finish this Halo campaign.', 'Who took my Xbox controller?', 'This Cabernet pairs great with Halo.', 'Ah, a lovely Pinot Noir.', 'Nothing beats a Malbec and Call of Duty.', 'Merlot or Syrah? I love them both.', 'Chianti and Xbox. Perfect night.', 'A bold Zinfandel. Now where is my Halo?', 'Is this a Bordeaux? Exquisite.', 'One more round of Call of Duty. And one more glass.'];
 
 function freeGround(minFromStart) {
   for (let i = 0; i < 300; i++) {
@@ -453,11 +453,16 @@ function drawHarv(c, t, moving, face, yelling) {
   c.beginPath(); c.moveTo(-8, -17); c.lineTo(0, -9); c.lineTo(8, -17); c.closePath(); paint(c, '#fff', OUT, 2);
   c.font = '700 22px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillStyle = '#fff'; c.fillText('H', 0, 4);
-  // hair, back layer
-  for (const [x, y, r] of [[-17, -37, 9], [-9, -46, 10], [3, -49, 10], [14, -43, 9], [19, -33, 7], [-20, -29, 7]]) { circ(c, x, y, r); paint(c, '#d9531e'); }
+  // straight hair: back layer hangs behind the head
+  rrPath(c, -23, -51, 46, 40, 18); paint(c, '#d9531e');
   circ(c, 0, -30, 19); paint(c, '#f7d6bd');
-  for (const [x, y, r] of [[-11, -43, 9], [1, -46, 10], [12, -41, 8], [-17, -36, 6]]) { circ(c, x, y, r); paint(c, '#d9531e', null); }
-  c.strokeStyle = '#f07a3a'; c.lineWidth = 2; c.beginPath(); c.arc(-2, -44, 7, Math.PI * 1.1, Math.PI * 1.7); c.stroke();
+  // front: side curtains and bangs cut straight across
+  c.beginPath(); c.moveTo(-21.5, -22); c.lineTo(-21.5, -36); c.quadraticCurveTo(-21.5, -53, 0, -53); c.quadraticCurveTo(21.5, -53, 21.5, -36);
+  c.lineTo(21.5, -22); c.lineTo(16, -22); c.lineTo(16, -38); c.lineTo(-16, -38); c.lineTo(-16, -22); c.closePath(); paint(c, '#d9531e', OUT, 2);
+  c.strokeStyle = '#b8401a'; c.lineWidth = 1.5; c.beginPath();
+  for (const x of [-10, -4, 2, 8, 13]) { c.moveTo(x, -50); c.lineTo(x, -39); }
+  c.moveTo(-19, -34); c.lineTo(-19, -23); c.moveTo(19, -34); c.lineTo(19, -23); c.stroke();
+  c.strokeStyle = '#f07a3a'; c.lineWidth = 2; c.beginPath(); c.arc(-3, -42, 9, Math.PI * 1.15, Math.PI * 1.55); c.stroke();
   const ox = face * 2;
   c.fillStyle = '#c96f4a';
   for (const [x, y] of [[-11, -20], [-8, -18], [-12, -17], [11, -20], [8, -18], [12, -17]]) { circ(c, x + ox, y, 1); c.fill(); }
@@ -656,7 +661,7 @@ function update(dt) {
     const d = steer(wino, wineTarget.x, wineTarget.y, wino.speed, dt);
     if (d < 18) {
       games = games.filter(g => g !== wineTarget);
-      wino.bubble = { text: 'Found my ' + wineTarget.name + '!', t: 2.2 };
+      wino.bubble = { text: 'Found my ' + wineTarget.name + '!' + (Math.random() < 0.5 ? ' Cheers!' : ''), t: 2.2 };
       burst(wineTarget.x, wineTarget.y - 10, ['#f2c230', '#ffffff', '#7fd3ff'], 14);
       if (dist(wino, player) < 500) { tone(880, .08, 'square', .05); tone(1320, .1, 'square', .05, .08); }
       wino.pause = 1.8;
@@ -674,7 +679,7 @@ function update(dt) {
 
   if (pStun <= 0 && immune <= 0 && dist(player, wino) < 30) {
     pStun = 0.8; immune = 2.5; wino.pause = Math.max(wino.pause, 1.2);
-    const line = pick(['Hey. Have you seen my video games?', 'Wait, did you take my Xbox?', 'Hold on. Seen my controller?']);
+    const line = pick(['Hey. Have you seen my Xbox?', 'Want to play Halo? I brought a Pinot.', 'Wait, did you take my Call of Duty?', 'Careful! This is a Cabernet.']);
     wino.bubble = { text: line, t: 1.8 };
     tone(300, .18, 'triangle', .1, 0, 140);
     say(line, 0.75, 1.05, false);
