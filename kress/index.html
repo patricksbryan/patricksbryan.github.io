@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Kress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
+<style>
+  /* Layout: full-bleed top-down house on a canvas; HUD pills float on top; menus are cream cards with a wood-trim shadow. */
+  :root {
+    --night: #1d140f;
+    --wood: #4a3426;
+    --wood-2: #6b4c38;
+    --cream: #fff4dc;
+    --paper: #fffaf0;
+    --ink: #2a1d15;
+    --gold: #ffc62b;
+    --gold-2: #e09a00;
+    --brick: #c2462d;
+    --muted: #7a6656;
+    --display: "Lilita One", "Arial Black", Arial, sans-serif;
+    --body: "Nunito", "Trebuchet MS", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night); color: var(--ink); font-family: var(--body); touch-action: none; user-select: none; -webkit-user-select: none; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  #hud { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; display: flex; gap: 8px; align-items: center; pointer-events: none; z-index: 2; flex-wrap: wrap; }
+  .pill { display: flex; align-items: center; gap: 6px; background: var(--cream); color: var(--ink); border: 2px solid var(--wood); border-radius: 999px; padding: 4px 12px; font-size: 17px; font-weight: 900; box-shadow: 0 3px 0 var(--wood); }
+  .pill .lbl { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 800; }
+  .pill b { font-variant-numeric: tabular-nums; }
+  .heart { width: 20px; height: 18px; fill: var(--brick); stroke: var(--wood); stroke-width: 1.5; }
+  .heart.off { fill: transparent; stroke: var(--muted); opacity: .6; }
+  #snd { margin-left: auto; pointer-events: auto; cursor: pointer; font: inherit; font-size: 14px; font-weight: 900; }
+  #snd:focus-visible, .card button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+  #banner { position: fixed; left: 50%; top: calc(58px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--cream); border: 2px solid var(--gold); border-radius: 10px; padding: 6px 14px; font-weight: 900; font-size: 17px; text-align: center; max-width: calc(100vw - 32px); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 2; }
+  #banner.show { opacity: 1; }
+
+  .screen { position: fixed; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: rgba(20,12,8,.55); }
+  .card { width: 100%; max-width: 440px; max-height: 100%; overflow-y: auto; background: var(--paper); border: 3px solid var(--wood); border-radius: 18px; box-shadow: 0 7px 0 var(--wood), 0 18px 40px rgba(0,0,0,.45); padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 14px; touch-action: pan-y; }
+  .card h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(48px, 15vw, 76px); line-height: .95; color: var(--gold); -webkit-text-stroke: 2px var(--wood); text-shadow: 0 5px 0 var(--wood); text-align: center; letter-spacing: .02em; }
+  .card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1; color: var(--ink); text-align: center; }
+  .card .sub { margin: 0; text-align: center; font-size: 16px; font-weight: 900; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+  .cast { display: flex; justify-content: center; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .cast li { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; max-width: 120px; }
+  .cast canvas { width: 100%; max-width: 100px; aspect-ratio: 1; border-radius: 14px; border: 2px solid var(--wood); }
+  .cast span { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); font-weight: 900; text-align: center; }
+  .how { margin: 0; font-size: 16px; line-height: 1.4; color: var(--muted); text-align: center; text-wrap: balance; font-weight: 700; }
+  .card button { align-self: center; font-family: var(--display); font-size: 26px; color: var(--ink); background: var(--gold); border: 3px solid var(--wood); border-radius: 14px; padding: 8px 34px; cursor: pointer; box-shadow: 0 5px 0 var(--wood); }
+  .card button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood); }
+  .portrait { align-self: center; width: 130px; height: 130px; border-radius: 16px; border: 3px solid var(--wood); }
+  .quote { margin: 0; align-self: center; background: #fff; color: var(--ink); border: 3px solid var(--ink); font-weight: 900; font-size: 22px; line-height: 1.25; padding: 10px 16px; border-radius: 16px; text-align: center; text-wrap: balance; position: relative; }
+  .msg { margin: 0; text-align: center; font-size: 19px; font-weight: 800; text-wrap: balance; }
+  .small { margin: 0; text-align: center; font-size: 14px; color: var(--muted); font-weight: 700; }
+  @media (prefers-reduced-motion: reduce) { #banner { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="pill"><span class="lbl">Level</span><b id="lvl">1</b></div>
+  <div class="pill" id="hearts" aria-label="Hearts left">
+    <svg class="heart" viewBox="0 0 24 22"><path d="M12 20.5S3.8 15.2 1.9 10.4C.4 6.6 2.6 2.4 6.6 2.1c2.3-.2 4.1 1.1 5.4 3 1.3-1.9 3.1-3.2 5.4-3 4 .3 6.2 4.5 4.7 8.3C20.2 15.2 12 20.5 12 20.5z"/></svg>
+    <svg class="heart" viewBox="0 0 24 22"><path d="M12 20.5S3.8 15.2 1.9 10.4C.4 6.6 2.6 2.4 6.6 2.1c2.3-.2 4.1 1.1 5.4 3 1.3-1.9 3.1-3.2 5.4-3 4 .3 6.2 4.5 4.7 8.3C20.2 15.2 12 20.5 12 20.5z"/></svg>
+    <svg class="heart" viewBox="0 0 24 22"><path d="M12 20.5S3.8 15.2 1.9 10.4C.4 6.6 2.6 2.4 6.6 2.1c2.3-.2 4.1 1.1 5.4 3 1.3-1.9 3.1-3.2 5.4-3 4 .3 6.2 4.5 4.7 8.3C20.2 15.2 12 20.5 12 20.5z"/></svg>
+  </div>
+  <div class="pill"><span class="lbl">Time</span><b id="time">0:00</b></div>
+  <div class="pill" id="beerPill"><span class="lbl">Beers</span><b id="beers">0</b></div>
+  <button id="snd" class="pill" type="button">Sound on</button>
+</div>
+<div id="banner"></div>
+
+<section class="screen" id="menu">
+  <div class="card">
+    <h1>Kress</h1>
+    <p class="sub">Find the gold star</p>
+    <ul class="cast">
+      <li><canvas id="castYou" width="160" height="160"></canvas><span>You</span></li>
+      <li><canvas id="castChad" width="160" height="160"></canvas><span>Chad</span></li>
+      <li><canvas id="castBeans" width="160" height="160"></canvas><span>Beans</span></li>
+    </ul>
+    <p class="how">The gold star is hidden somewhere in the house. Don't let Chad or Beans corner you, because they will not stop talking. Grab the beers along the way if you want, but each one makes you a little tipsier. Drag anywhere to walk, or use the arrow keys or WASD. You get 3 hearts.</p>
+    <button id="play" type="button">Play</button>
+    <p class="small" id="bestLine"></p>
+  </div>
+</section>
+
+<section class="screen" id="talk" hidden>
+  <div class="card">
+    <canvas class="portrait" id="talkFace" width="260" height="260"></canvas>
+    <h2 id="talkName">Chad</h2>
+    <p class="quote" id="talkQuote"></p>
+    <button id="talkBtn" type="button">Gotta go!</button>
+  </div>
+</section>
+
+<section class="screen" id="won" hidden>
+  <div class="card">
+    <h1>Got it!</h1>
+    <p class="msg" id="wonMsg"></p>
+    <p class="small">Next level: a new house, and Chad and Beans get a little faster. You get a heart back.</p>
+    <button id="next" type="button">Next level</button>
+  </div>
+</section>
+
+<section class="screen" id="lost" hidden>
+  <div class="card">
+    <h2 id="lostTitle">Trapped</h2>
+    <canvas class="portrait" id="lostFace" width="260" height="260"></canvas>
+    <p class="quote" id="lostQuote"></p>
+    <p class="msg" id="lostMsg"></p>
+    <button id="retry" type="button">Try again</button>
+  </div>
+</section>
+
+<script>
+(() => {
+'use strict';
+const cv = document.getElementById('game'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+let W = 0, H = 0, DPR = 1, Z = 1;
+
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  Z = Math.max(0.75, Math.min(1.5, Math.min(W, H) / 480));
+}
+window.addEventListener('resize', resize); resize();
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const fmt = s => { s = Math.floor(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967295; };
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); }
+
+/* ---------- Characters ---------- */
+const LOOK_YOU = { skin: '#f1c7a1', hair: '#2b1d14', style: 'short', top: '#e8743a', bottom: '#33507f', legs: '#33507f', shoes: '#f4f4f4' };
+const LOOK_CHAD = { skin: '#f3c49b', hair: '#d8b56b', hair2: '#b8954d', style: 'flow', top: null, bottom: '#c8342b', stripe: '#ffffff', legs: '#f3c49b', shoes: '#222' };
+const LOOK_BEANS = { skin: '#ecbd94', hair: '#5e3b20', hair2: '#43291a', style: 'part', top: '#f7f7f4', outline: 'rgba(60,45,35,.35)', bottom: '#cbb48a', legs: '#ecbd94', shoes: '#7a5a3a' };
+
+const CHAD = {
+  name: 'Chad', look: LOOK_CHAD, color: '#c8342b', pitch: 330,
+  lines: [
+    'Bro, what should I eat?',
+    'What are we doing for food?',
+    'What should I get for food?',
+    'Wings or a burrito? What should I eat?',
+    'Wanna go to Crown Oaks pool?',
+    'Crown Oaks pool today? You in?',
+    'I have to watch Green Lantern.',
+    "Can't stay long, I gotta watch Green Lantern."
+  ],
+  spot: ['Yo! Wait up!', 'Bro! C’mere!'],
+  pause: ['Hold on... what should I eat?', 'Wait. Is Green Lantern on?'],
+  excuses: ['Uh, gotta go!', 'Eat whatever, bro!', 'Maybe later!', "I'm good, man!"]
+};
+const BEANS = {
+  name: 'Beans', look: LOOK_BEANS, color: '#2d8a5f', pitch: 190,
+  lines: [
+    'Wanna play Call of Duty?',
+    'Hop on Call of Duty?',
+    'One game of COD. Just one.',
+    'Bro, I need a squad for COD.',
+    'Call of Duty? Come on, man.',
+    "We could be playing Call of Duty right now.",
+    "Firehouse Subs or Jersey Mike's?",
+    "Dude, I'm so hungover.",
+    'Lisa?',
+    'I dunno man.'
+  ],
+  spot: ['Dude! Wanna play COD?', 'Ayy! Hop on Call of Duty!'],
+  pause: ['Hold on, checking my COD loadout...', 'Wait, my controller died.'],
+  excuses: ['Not right now!', "I'm bad at COD!", 'Maybe later!', 'Gotta go!']
+};
+
+function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(0, 0, 13, 4.5, 0, 0, Math.PI * 2); c.fill();
+  const sw = moving ? Math.sin(t * 13) : 0, bob = moving ? -Math.abs(Math.cos(t * 13)) * 1.6 : 0;
+  c.translate(0, bob);
+  // legs
+  for (const [lx, ph] of [[-5, sw], [5, -sw]]) {
+    const lift = Math.max(0, ph) * 3;
+    c.fillStyle = look.legs; c.fillRect(lx - 3, -16, 6, 13 - lift);
+    c.fillStyle = look.shoes; rr(c, lx - 4, -5 - lift, 8, 5, 2); c.fill();
+  }
+  // torso
+  c.fillStyle = look.top || look.skin; rr(c, -11, -41, 22, 20, 6); c.fill();
+  if (look.outline) { c.strokeStyle = look.outline; c.lineWidth = 1; c.stroke(); }
+  if (!look.top) {
+    c.strokeStyle = 'rgba(150,90,50,.45)'; c.lineWidth = 1.2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-7.5, -34); c.quadraticCurveTo(-4, -31.5, -1, -33.5); c.moveTo(7.5, -34); c.quadraticCurveTo(4, -31.5, 1, -33.5);
+    c.moveTo(0, -31); c.lineTo(0, -24); c.moveTo(-4, -28.5); c.lineTo(-1.5, -28.5); c.moveTo(4, -28.5); c.lineTo(1.5, -28.5); c.stroke();
+  } else if (look.polo) {
+    c.fillStyle = 'rgba(255,255,255,.85)';
+    c.beginPath(); c.moveTo(-7, -41); c.lineTo(-1, -41); c.lineTo(-3, -36); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(7, -41); c.lineTo(1, -41); c.lineTo(3, -36); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -40); c.lineTo(0, -33); c.stroke();
+    c.fillStyle = '#fff'; circ(c, 0, -37.5, .9); c.fill(); circ(c, 0, -34.5, .9); c.fill();
+    c.fillStyle = '#f2c230'; circ(c, 5.5, -35, 1.3); c.fill();
+  } else {
+    c.fillStyle = look.skin; c.beginPath(); c.ellipse(0, -41, 4.5, 2.6, 0, 0, Math.PI); c.fill();
+  }
+  // shorts / pants
+  c.fillStyle = look.bottom; rr(c, -10.5, -25, 21, 11, 3); c.fill();
+  if (look.stripe) { c.fillStyle = look.stripe; c.fillRect(-10.5, -24, 2, 9); c.fillRect(8.5, -24, 2, 9); c.fillRect(-10.5, -25, 21, 1.6); }
+  // arms
+  for (const sd of [-1, 1]) {
+    c.save(); c.translate(sd * 13, -39); c.rotate(-sd * 0 + sw * .38 * sd);
+    if (look.top) { c.fillStyle = look.top; rr(c, -3, 0, 6, 6, 2); c.fill(); if (look.outline) { c.strokeStyle = look.outline; c.lineWidth = 1; c.stroke(); } }
+    c.fillStyle = look.skin; c.fillRect(-2.4, look.top ? 5 : 0, 4.8, look.top ? 8 : 13);
+    circ(c, 0, 14, 2.8); c.fill();
+    c.restore();
+  }
+  // head
+  c.fillStyle = look.skin; circ(c, -11, -50, 2.6); c.fill(); circ(c, 11, -50, 2.6); c.fill();
+  circ(c, 0, -51, 11); c.fill();
+  const ex = fx * 1.6;
+  c.fillStyle = '#2a1d15'; circ(c, -4 + ex, -51, 1.7); c.fill(); circ(c, 4 + ex, -51, 1.7); c.fill();
+  if (look.bags) { c.strokeStyle = 'rgba(110,70,90,.5)'; c.lineWidth = 1; c.beginPath(); c.arc(-4 + ex, -49.5, 2.2, .3, Math.PI - .3); c.moveTo(6.2 + ex, -49.5); c.arc(4 + ex, -49.5, 2.2, .3, Math.PI - .3); c.stroke(); }
+  if (talking) { c.fillStyle = '#7a2a22'; c.beginPath(); c.ellipse(ex, -45.5, 2.6, 2 + Math.abs(Math.sin(t * 18)) * 1.4, 0, 0, Math.PI * 2); c.fill(); }
+  else { c.strokeStyle = '#7a3b2a'; c.lineWidth = 1.3; c.beginPath(); c.arc(ex, -47, 3, .35, Math.PI - .35); c.stroke(); }
+  // hair
+  c.fillStyle = look.hair;
+  if (look.style === 'flow') {
+    c.beginPath(); c.arc(0, -52, 12, Math.PI, 0);
+    c.lineTo(12, -50); c.lineTo(9, -54); c.lineTo(7, -49); c.lineTo(3, -55); c.lineTo(0, -50); c.lineTo(-4, -55); c.lineTo(-7, -49); c.lineTo(-10, -54); c.lineTo(-12.5, -48); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-12, -56); c.quadraticCurveTo(-4, -68, 10, -63); c.quadraticCurveTo(2, -62, -12, -56); c.fill();
+    c.strokeStyle = look.hair2; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-6, -60); c.quadraticCurveTo(0, -63, 6, -60); c.moveTo(-8, -57); c.quadraticCurveTo(-2, -59, 3, -56); c.stroke();
+  } else if (look.style === 'part') {
+    c.beginPath(); c.arc(0, -52, 11.8, Math.PI, 0); c.lineTo(11.8, -51); c.lineTo(9, -55.5); c.lineTo(-11.8, -55); c.lineTo(-11.8, -51); c.closePath(); c.fill();
+    c.strokeStyle = look.hair2; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-4, -63.5); c.quadraticCurveTo(-3, -59, -4.5, -56); c.stroke();
+    c.beginPath(); c.moveTo(-3, -56); c.quadraticCurveTo(4, -59, 10, -55); c.stroke();
+  } else {
+    c.beginPath(); c.arc(0, -52, 11.6, Math.PI, 0); c.lineTo(11.6, -52); c.quadraticCurveTo(0, -58, -11.6, -52); c.closePath(); c.fill();
+  }
+  c.restore();
+}
+
+function drawPortrait(canvas, look, bg) {
+  const c = canvas.getContext('2d'), w = canvas.width;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = bg; c.fillRect(0, 0, w, w);
+  c.fillStyle = 'rgba(255,255,255,.25)'; circ(c, w / 2, w * .42, w * .34); c.fill();
+  drawPerson(c, w / 2, w * .98, look, 0, false, 0, w / 76, false);
+}
+
+/* ---------- House ---------- */
+const T = 40, RC = 4, RR = 3, RW = 10, RH = 8;
+const GW = RC * (RW + 1) + 1, GH = RR * (RH + 1) + 1;
+const WW = GW * T, WH = GH * T;
+let grid, roomOf, near, rooms, furn;
+
+const ROOMS = [
+  { n: 'Living Room', f: 'carpet', c: '#cdb893', items: ['rug', 'couch', 'tv', 'plant'] },
+  { n: 'Kitchen', f: 'tile', c: '#efe9da', c2: '#dcd3bd', items: ['fridge', 'stove', 'counter', 'sink', 'table'] },
+  { n: 'Bedroom', f: 'carpet', c: '#a9bcd0', items: ['bed', 'dresser', 'plant'] },
+  { n: 'Bathroom', f: 'tile', c: '#d4ecef', c2: '#bcd9de', items: ['tub', 'toilet', 'sink'] },
+  { n: 'Game Room', f: 'carpet', c: '#7d77a0', items: ['codtv', 'beanbag', 'beanbag', 'pooltable'] },
+  { n: 'Dining Room', f: 'wood', c: '#b5824c', items: ['rug', 'dtable', 'plant'] },
+  { n: 'Laundry', f: 'tile', c: '#e7e4f0', c2: '#d2cee2', items: ['washer', 'washer', 'shelf'] },
+  { n: 'Office', f: 'wood', c: '#aa7b4b', items: ['desk', 'bookshelf', 'plant'] },
+  { n: 'Den', f: 'wood', c: '#9d6e42', items: ['rug', 'couch', 'gltv'] },
+  { n: 'Garage', f: 'concrete', c: '#a6a6a1', items: ['car', 'shelf', 'minifridge'] },
+  { n: 'Home Gym', f: 'mat', c: '#4a5258', items: ['bench', 'rack', 'rack'] },
+  { n: 'Guest Room', f: 'carpet', c: '#cdb0c0', items: ['bed', 'dresser', 'plant'] }
+];
+// w = length along the wall, h = depth into the room
+const FURN = {
+  rug: { w: 4, h: 3, center: true, solid: false }, couch: { w: 3, h: 1 }, tv: { w: 3, h: 1, north: true }, gltv: { w: 3, h: 1, north: true }, codtv: { w: 3, h: 1, north: true },
+  plant: { w: 1, h: 1 }, fridge: { w: 1, h: 1, north: true }, stove: { w: 1, h: 1 }, counter: { w: 3, h: 1 }, sink: { w: 1, h: 1 }, table: { w: 2, h: 2, center: true },
+  bed: { w: 2, h: 3 }, dresser: { w: 2, h: 1 }, tub: { w: 2, h: 1 }, toilet: { w: 1, h: 1 }, beanbag: { w: 1, h: 1, center: true }, pooltable: { w: 3, h: 2, center: true },
+  dtable: { w: 3, h: 2, center: true }, washer: { w: 1, h: 1 }, shelf: { w: 2, h: 1 }, desk: { w: 2, h: 1 }, bookshelf: { w: 2, h: 1 }, car: { w: 2, h: 4 },
+  minifridge: { w: 1, h: 1 }, bench: { w: 1, h: 2, center: true }, rack: { w: 2, h: 1 }
+};
+const BLANKETS = ['#e06c5a', '#5a8fd6', '#f0b84a', '#7cbf7a', '#b07cd0'];
+
+function connected() {
+  let start = -1, total = 0;
+  for (let i = 0; i < grid.length; i++) if (grid[i] === 0) { total++; if (start < 0) start = i; }
+  return countReach(start) === total;
+}
+function countReach(src) {
+  const seen = new Uint8Array(grid.length), q = new Int32Array(grid.length);
+  let h = 0, t = 0; q[t++] = src; seen[src] = 1;
+  while (h < t) {
+    const i = q[h++], x = i % GW;
+    for (const n of [i - 1, i + 1, i - GW, i + GW]) {
+      if (n < 0 || n >= grid.length || seen[n] || grid[n] !== 0) continue;
+      if ((n === i - 1 && x === 0) || (n === i + 1 && x === GW - 1)) continue;
+      seen[n] = 1; q[t++] = n;
+    }
+  }
+  return t;
+}
+
+function genHouse() {
+  grid = new Uint8Array(GW * GH).fill(1);
+  roomOf = new Int16Array(GW * GH).fill(-1);
+  near = new Uint8Array(GW * GH);
+  rooms = []; furn = [];
+  const types = shuffle(ROOMS.slice());
+  for (let cy = 0; cy < RR; cy++) for (let cx = 0; cx < RC; cx++) {
+    const x0 = cx * (RW + 1) + 1, y0 = cy * (RH + 1) + 1;
+    const r = { id: rooms.length, cx, cy, x0, y0, x1: x0 + RW - 1, y1: y0 + RH - 1, type: types[rooms.length] };
+    for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) { grid[y * GW + x] = 0; roomOf[y * GW + x] = r.id; }
+    rooms.push(r);
+  }
+  const roomAt = (cx, cy) => rooms[cy * RC + cx];
+  const doors = new Set(), doorTiles = [];
+  function addDoor(a, b) {
+    const key = Math.min(a.id, b.id) + '-' + Math.max(a.id, b.id);
+    if (doors.has(key)) return; doors.add(key);
+    let tiles;
+    if (a.cy === b.cy) { const wx = Math.max(a.cx, b.cx) * (RW + 1), y = a.y0 + randInt(1, RH - 3); tiles = [[wx, y], [wx, y + 1]]; }
+    else { const wy = Math.max(a.cy, b.cy) * (RH + 1), x = a.x0 + randInt(1, RW - 3); tiles = [[x, wy], [x + 1, wy]]; }
+    for (const [x, y] of tiles) { grid[y * GW + x] = 0; roomOf[y * GW + x] = -2; doorTiles.push([x, y]); }
+  }
+  const nbrs = r => [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [r.cx + dx, r.cy + dy]).filter(([x, y]) => x >= 0 && y >= 0 && x < RC && y < RR).map(([x, y]) => roomAt(x, y));
+  // spanning tree, then a few extra doors so there are loops to run around
+  const seen = new Set([0]), stack = [rooms[0]];
+  while (stack.length) {
+    const r = stack[stack.length - 1], open = shuffle(nbrs(r).filter(n => !seen.has(n.id)));
+    if (!open.length) { stack.pop(); continue; }
+    addDoor(r, open[0]); seen.add(open[0].id); stack.push(open[0]);
+  }
+  for (let k = 0; k < 5; k++) { const r = pick(rooms); addDoor(r, pick(nbrs(r))); }
+  for (const [dx, dy] of doorTiles) for (let y = dy - 2; y <= dy + 2; y++) for (let x = dx - 2; x <= dx + 2; x++) if (x >= 0 && y >= 0 && x < GW && y < GH) near[y * GW + x] = 1;
+
+  for (const r of rooms) for (const k of r.type.items) placeFurn(r, k);
+}
+
+function placeFurn(r, k) {
+  const d = FURN[k];
+  for (let a = 0; a < 50; a++) {
+    let side = null, w, h, x, y;
+    if (d.center) {
+      w = d.w; h = d.h; if (Math.random() < .5) [w, h] = [h, w];
+      x = randInt(r.x0 + 1, r.x1 - w); y = randInt(r.y0 + 1, r.y1 - h);
+    } else {
+      side = d.north ? 'n' : pick(['n', 's', 'e', 'w']);
+      if (side === 'n' || side === 's') { w = d.w; h = d.h; } else { w = d.h; h = d.w; }
+      if (side === 'n') { y = r.y0; x = randInt(r.x0, r.x1 - w + 1); }
+      else if (side === 's') { y = r.y1 - h + 1; x = randInt(r.x0, r.x1 - w + 1); }
+      else if (side === 'e') { x = r.x1 - w + 1; y = randInt(r.y0, r.y1 - h + 1); }
+      else { x = r.x0; y = randInt(r.y0, r.y1 - h + 1); }
+    }
+    let ok = true;
+    for (let ty = y; ty < y + h && ok; ty++) for (let tx = x; tx < x + w; tx++) {
+      const i = ty * GW + tx;
+      if (grid[i] !== 0 || roomOf[i] !== r.id || near[i]) { ok = false; break; }
+      if (d.solid === false && furn.some(f => f.solid === false && tx >= f.x && tx < f.x + f.w && ty >= f.y && ty < f.y + f.h)) { ok = false; break; }
+    }
+    if (!ok) continue;
+    const solid = d.solid !== false;
+    if (solid) {
+      for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) grid[ty * GW + tx] = 2;
+      if (!connected()) { for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) grid[ty * GW + tx] = 0; continue; }
+    }
+    furn.push({ k, x, y, w, h, side, solid, col: pick(BLANKETS), room: r.id });
+    return;
+  }
+}
+
+/* ---------- Drawing the house ---------- */
+function drawFloor(c, tx, ty) {
+  const i = ty * GW + tx, X = tx * T, Y = ty * T, rid = roomOf[i];
+  if (grid[i] === 1) {
+    c.fillStyle = '#4a3426'; c.fillRect(X, Y, T, T);
+    if (ty + 1 < GH && grid[i + GW] !== 1) { c.fillStyle = '#7a5a43'; c.fillRect(X, Y + T - 10, T, 10); c.fillStyle = '#5e4332'; c.fillRect(X, Y + T - 10, T, 2); }
+    return;
+  }
+  if (rid === -2) { c.fillStyle = '#8b6b4a'; c.fillRect(X, Y, T, T); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(X, Y + T / 2 - 1, T, 2); return; }
+  const rt = rooms[rid].type;
+  c.fillStyle = rt.c; c.fillRect(X, Y, T, T);
+  if (rt.f === 'tile') {
+    c.fillStyle = rt.c2; if ((tx + ty) % 2) c.fillRect(X, Y, T, T);
+    c.fillStyle = 'rgba(0,0,0,.07)'; c.fillRect(X, Y, T, 1); c.fillRect(X, Y, 1, T);
+  } else if (rt.f === 'wood') {
+    c.fillStyle = 'rgba(60,30,10,.18)';
+    for (let k = 0; k < 4; k++) { c.fillRect(X, Y + k * 10, T, 1); c.fillRect(X + Math.floor(hash(tx, ty * 4 + k) * T), Y + k * 10, 1, 10); }
+  } else if (rt.f === 'carpet') {
+    c.fillStyle = 'rgba(0,0,0,.05)';
+    for (let k = 0; k < 5; k++) c.fillRect(X + hash(tx * 7 + k, ty) * T, Y + hash(tx, ty * 7 + k) * T, 2, 2);
+  } else if (rt.f === 'concrete') {
+    c.fillStyle = 'rgba(0,0,0,.08)'; if (hash(tx, ty) > .7) c.fillRect(X + 8, Y + hash(ty, tx) * T, 14, 1.5);
+    c.fillStyle = 'rgba(0,0,0,.05)'; c.fillRect(X, Y, T, 1);
+  } else if (rt.f === 'mat') {
+    c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1; c.strokeRect(X + .5, Y + .5, T - 1, T - 1);
+  }
+}
+
+function backRect(X, Y, PW, PH, side, th) {
+  if (side === 'n') return [X, Y, PW, th];
+  if (side === 's') return [X, Y + PH - th, PW, th];
+  if (side === 'e') return [X + PW - th, Y, th, PH];
+  return [X, Y, th, PH];
+}
+
+function drawFurn(c, f, t) {
+  const X = f.x * T + 3, Y = f.y * T + 3, PW = f.w * T - 6, PH = f.h * T - 6, cx = X + PW / 2, cy = Y + PH / 2;
+  c.save();
+  c.lineWidth = 2; c.strokeStyle = 'rgba(40,25,15,.55)';
+  const box = (col, r = 5) => { c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, X + 2, Y + 4, PW, PH, r); c.fill(); c.fillStyle = col; rr(c, X, Y, PW, PH, r); c.fill(); c.stroke(); };
+  switch (f.k) {
+    case 'rug': {
+      c.fillStyle = f.col; rr(c, X, Y, PW, PH, 8); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 3; rr(c, X + 8, Y + 8, PW - 16, PH - 16, 5); c.stroke();
+      break;
+    }
+    case 'couch': {
+      box('#8a5a44', 8);
+      c.fillStyle = '#6a4232'; const b = backRect(X, Y, PW, PH, f.side, 12); rr(c, b[0], b[1], b[2], b[3], 6); c.fill();
+      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1.5; c.beginPath();
+      if (f.side === 'n' || f.side === 's') for (let k = 1; k < f.w; k++) { c.moveTo(X + k * T - 3, Y + 4); c.lineTo(X + k * T - 3, Y + PH - 4); }
+      else for (let k = 1; k < f.h; k++) { c.moveTo(X + 4, Y + k * T - 3); c.lineTo(X + PW - 4, Y + k * T - 3); }
+      c.stroke(); break;
+    }
+    case 'tv': case 'gltv': case 'codtv': {
+      box('#3a2e28', 4);
+      const sx = X + 6, sy = Y - 22, sw = PW - 12, sh = 40;
+      c.fillStyle = '#111'; rr(c, sx - 3, sy - 3, sw + 6, sh + 6, 4); c.fill();
+      if (f.k === 'gltv') {
+        const g = c.createLinearGradient(sx, sy, sx, sy + sh); g.addColorStop(0, '#1d7a2e'); g.addColorStop(1, '#0b3d16'); c.fillStyle = g; c.fillRect(sx, sy, sw, sh);
+        const p = .8 + Math.sin(t * 4) * .2;
+        c.strokeStyle = `rgba(150,255,140,${p})`; c.lineWidth = 3; circ(c, sx + sw / 2, sy + sh / 2, 11); c.stroke();
+        c.fillStyle = `rgba(150,255,140,${p})`; c.fillRect(sx + sw / 2 - 15, sy + sh / 2 - 8, 30, 3); c.fillRect(sx + sw / 2 - 15, sy + sh / 2 + 5, 30, 3);
+        c.font = '900 7px Nunito, sans-serif'; c.textAlign = 'center'; c.fillText('GREEN LANTERN', sx + sw / 2, sy + sh - 2);
+        const gl = c.createRadialGradient(cx, Y + PH + 30, 4, cx, Y + PH + 30, 90); gl.addColorStop(0, 'rgba(80,255,90,.22)'); gl.addColorStop(1, 'rgba(80,255,90,0)'); c.fillStyle = gl; c.fillRect(cx - 90, Y + PH - 60, 180, 180);
+      } else if (f.k === 'codtv') {
+        const g = c.createLinearGradient(sx, sy, sx, sy + sh); g.addColorStop(0, '#6d6a4a'); g.addColorStop(1, '#2c2a1c'); c.fillStyle = g; c.fillRect(sx, sy, sw, sh);
+        c.fillStyle = '#3d3b28'; c.fillRect(sx, sy + sh * .62, sw, sh * .38);
+        c.strokeStyle = '#ff4a3a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(sx + sw / 2 - 7, sy + sh / 2); c.lineTo(sx + sw / 2 + 7, sy + sh / 2); c.moveTo(sx + sw / 2, sy + sh / 2 - 7); c.lineTo(sx + sw / 2, sy + sh / 2 + 7); c.stroke();
+        c.fillStyle = '#e8e0b0'; c.font = '900 7px Nunito, sans-serif'; c.textAlign = 'left'; c.fillText('CALL OF DUTY', sx + 3, sy + 9);
+        c.fillStyle = '#7dff7d'; c.fillRect(sx + 3, sy + sh - 5, 24, 2.5);
+      } else {
+        const g = c.createLinearGradient(sx, sy, sx, sy + sh); g.addColorStop(0, '#4d8de0'); g.addColorStop(1, '#203f80'); c.fillStyle = g; c.fillRect(sx, sy, sw, sh);
+        c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + 30, sy); c.lineTo(sx, sy + 24); c.fill();
+      }
+      break;
+    }
+    case 'plant': {
+      c.fillStyle = '#9a5b3a'; circ(c, cx, cy + 4, 10); c.fill(); c.stroke();
+      c.fillStyle = '#3f9a4a'; for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2 + .3; circ(c, cx + Math.cos(a) * 7, cy - 2 + Math.sin(a) * 7, 7); c.fill(); }
+      c.fillStyle = '#5cbf5f'; circ(c, cx, cy - 3, 6); c.fill(); break;
+    }
+    case 'fridge': {
+      box('#dfe4e8', 4);
+      const fy = Y - 28; c.fillStyle = '#eef1f4'; rr(c, X, fy, PW, PH + 28, 4); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.moveTo(X, fy + 22); c.lineTo(X + PW, fy + 22); c.stroke();
+      c.fillStyle = '#9aa3ab'; c.fillRect(X + PW - 7, fy + 8, 3, 10); c.fillRect(X + PW - 7, fy + 28, 3, 14);
+      c.fillStyle = '#f0b84a'; c.fillRect(X + 6, fy + 30, 8, 8); break;
+    }
+    case 'stove': {
+      box('#e9e9e9', 4); c.fillStyle = '#333';
+      for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { circ(c, cx + a * 8, cy + b * 8, 5); c.fill(); }
+      break;
+    }
+    case 'counter': case 'sink': {
+      box('#d8c49b', 3);
+      if (f.k === 'sink') { c.fillStyle = '#a9c4cf'; c.beginPath(); c.ellipse(cx, cy, 11, 9, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = '#777'; circ(c, cx, cy, 2); c.fill(); }
+      else { c.fillStyle = '#fff'; circ(c, cx - 20, cy, 6); c.fill(); c.fillStyle = '#e06c5a'; circ(c, cx + 18, cy - 2, 4); c.fill(); }
+      break;
+    }
+    case 'table': case 'dtable': {
+      box('#9a6a3c', 10);
+      c.fillStyle = '#fff'; const n = f.k === 'dtable' ? 4 : 2;
+      for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2 + .6; circ(c, cx + Math.cos(a) * PW * .28, cy + Math.sin(a) * PH * .28, 6); c.fill(); }
+      if (f.k === 'dtable') { c.fillStyle = '#f0b84a'; circ(c, cx, cy, 5); c.fill(); }
+      break;
+    }
+    case 'bed': {
+      box('#6b4a2f', 6);
+      c.fillStyle = '#f6f1e6'; rr(c, X + 4, Y + 4, PW - 8, PH - 8, 5); c.fill();
+      const p = backRect(X + 4, Y + 4, PW - 8, PH - 8, f.side, 18);
+      c.fillStyle = f.col; const bl = f.side === 'n' ? [X + 4, Y + 26, PW - 8, PH - 30] : f.side === 's' ? [X + 4, Y + 4, PW - 8, PH - 30] : f.side === 'e' ? [X + 4, Y + 4, PW - 30, PH - 8] : [X + 26, Y + 4, PW - 30, PH - 8];
+      rr(c, bl[0], bl[1], bl[2], bl[3], 4); c.fill();
+      c.fillStyle = '#fff'; rr(c, p[0] + 3, p[1] + 3, p[2] - 6, p[3] - 6, 5); c.fill(); c.strokeStyle = 'rgba(0,0,0,.15)'; c.stroke();
+      break;
+    }
+    case 'dresser': case 'shelf': case 'bookshelf': {
+      box(f.k === 'shelf' ? '#8d949a' : '#7a5236', 3);
+      const horiz = PW > PH, n = 6;
+      for (let k = 0; k < n; k++) {
+        c.fillStyle = f.k === 'bookshelf' ? pick(['#c0392b', '#2e86de', '#f0b84a', '#27ae60', '#8e44ad']) : f.k === 'shelf' ? '#c8a26b' : 'rgba(0,0,0,.2)';
+        if (f.k === 'bookshelf') c.fillStyle = ['#c0392b', '#2e86de', '#f0b84a', '#27ae60', '#8e44ad', '#e67e22'][k];
+        if (horiz) c.fillRect(X + 5 + k * (PW - 10) / n, Y + 6, (PW - 10) / n - 2, PH - 12);
+        else c.fillRect(X + 6, Y + 5 + k * (PH - 10) / n, PW - 12, (PH - 10) / n - 2);
+      }
+      break;
+    }
+    case 'tub': {
+      box('#f7f7f7', 12); c.fillStyle = '#9fd3e6'; rr(c, X + 6, Y + 6, PW - 12, PH - 12, 9); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.7)'; circ(c, cx - 8, cy - 2, 3); c.fill(); circ(c, cx + 6, cy + 3, 2); c.fill(); break;
+    }
+    case 'toilet': {
+      const b = backRect(X, Y, PW, PH, f.side, 10); c.fillStyle = '#f7f7f7'; rr(c, b[0], b[1], b[2], b[3], 3); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(cx, cy, 10, 11, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.fillStyle = '#cfe8ef'; c.beginPath(); c.ellipse(cx, cy, 5, 6, 0, 0, Math.PI * 2); c.fill(); break;
+    }
+    case 'washer': {
+      box('#f2f2f2', 4); c.fillStyle = '#7ab'; circ(c, cx, cy, 10); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.5)'; circ(c, cx - 3, cy - 3, 3); c.fill(); break;
+    }
+    case 'desk': {
+      box('#9a6a3c', 3); c.fillStyle = '#222'; const b = backRect(X + 8, Y + 4, PW - 16, PH - 8, f.side, 6); c.fillRect(b[0], b[1], b[2], b[3]);
+      c.fillStyle = '#ddd'; c.fillRect(cx - 10, cy - 2, 20, 6); break;
+    }
+    case 'beanbag': {
+      c.fillStyle = 'rgba(0,0,0,.18)'; circ(c, cx + 2, cy + 4, 15); c.fill();
+      c.fillStyle = f.col; circ(c, cx, cy, 15); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.25)'; circ(c, cx - 4, cy - 5, 5); c.fill(); break;
+    }
+    case 'pooltable': {
+      box('#6b3f22', 6); c.fillStyle = '#1f8a4c'; rr(c, X + 7, Y + 7, PW - 14, PH - 14, 3); c.fill();
+      c.fillStyle = '#111'; for (const [a, b] of [[X + 8, Y + 8], [X + PW - 8, Y + 8], [X + 8, Y + PH - 8], [X + PW - 8, Y + PH - 8]]) { circ(c, a, b, 3.5); c.fill(); }
+      c.fillStyle = '#fff'; circ(c, cx - 12, cy, 3.5); c.fill(); c.fillStyle = '#e0b030'; circ(c, cx + 10, cy - 4, 3.5); c.fill(); c.fillStyle = '#c0392b'; circ(c, cx + 14, cy + 4, 3.5); c.fill();
+      break;
+    }
+    case 'car': {
+      c.fillStyle = 'rgba(0,0,0,.25)'; rr(c, X + 4, Y + 6, PW - 4, PH - 4, 16); c.fill();
+      c.fillStyle = '#c0392b'; rr(c, X + 4, Y + 2, PW - 8, PH - 4, 16); c.fill(); c.stroke();
+      c.fillStyle = '#9fc5df'; const vert = PH > PW;
+      if (vert) { rr(c, X + 12, cy - PH * .2, PW - 24, PH * .14, 5); c.fill(); rr(c, X + 12, cy + PH * .14, PW - 24, PH * .1, 5); c.fill(); }
+      else { rr(c, cx - PW * .2, Y + 12, PW * .14, PH - 24, 5); c.fill(); rr(c, cx + PW * .14, Y + 12, PW * .1, PH - 24, 5); c.fill(); }
+      break;
+    }
+    case 'minifridge': {
+      box('#2b2b2b', 4); c.fillStyle = '#ddd'; c.fillRect(X + PW - 8, Y + 8, 3, PH - 16); break;
+    }
+    case 'bench': {
+      c.fillStyle = '#888'; c.fillRect(X + 4, Y + 4, PW - 8, PH - 8);
+      c.fillStyle = '#1e1e1e'; rr(c, X + 6, Y + 2, PW - 12, PH - 4, 6); c.fill(); c.stroke(); break;
+    }
+    case 'rack': {
+      box('#5b6268', 3); c.fillStyle = '#222'; const horiz = PW > PH;
+      for (let k = 0; k < 4; k++) { if (horiz) { circ(c, X + 12 + k * (PW - 24) / 3, cy, 6); } else { circ(c, cx, Y + 12 + k * (PH - 24) / 3, 6); } c.fill(); }
+      break;
+    }
+  }
+  c.restore();
+}
+
+function drawStar(c, x, y, r, rot) {
+  c.beginPath();
+  for (let k = 0; k < 10; k++) { const a = rot - Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad); }
+  c.closePath();
+}
+
+function drawBeer(c, x, y, t) {
+  c.save();
+  const g = c.createRadialGradient(x, y, 2, x, y, 26); g.addColorStop(0, 'rgba(255,200,80,.35)'); g.addColorStop(1, 'rgba(255,200,80,0)');
+  c.fillStyle = g; c.fillRect(x - 26, y - 26, 52, 52);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.beginPath(); c.ellipse(x, y + 12, 8, 3, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#d9dde2'; rr(c, x - 7, y - 12, 14, 24, 3); c.fill();
+  c.fillStyle = '#d4a12a'; c.fillRect(x - 7, y - 7, 14, 14);
+  c.fillStyle = '#fff'; c.font = '900 7px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('BEER', x, y);
+  c.strokeStyle = 'rgba(40,25,15,.6)'; c.lineWidth = 1.5; rr(c, x - 7, y - 12, 14, 24, 3); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(x - 5, y - 10, 2, 20);
+  c.fillStyle = `rgba(255,250,210,${.5 + .5 * Math.sin(t * 4)})`; circ(c, x + 9, y - 12, 1.8); c.fill();
+  c.restore();
+}
+
+function wrapText(c, text, maxW) {
+  const words = text.split(' '), lines = []; let line = '';
+  for (const w of words) { const test = line ? line + ' ' + w : w; if (c.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test; }
+  if (line) lines.push(line); return lines;
+}
+function drawBubble(c, x, y, text, col, a) {
+  c.save(); c.globalAlpha = a;
+  c.font = '900 13px Nunito, sans-serif';
+  const lines = wrapText(c, text, 150), lw = Math.max(...lines.map(l => c.measureText(l).width));
+  const bw = lw + 18, bh = lines.length * 16 + 10, bx = x - bw / 2, by = y - bh - 10;
+  c.fillStyle = '#fff'; c.strokeStyle = col; c.lineWidth = 2.5;
+  rr(c, bx, by, bw, bh, 9); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(x - 6, by + bh - 1); c.lineTo(x, by + bh + 9); c.lineTo(x + 6, by + bh - 1); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(x - 6, by + bh + 1); c.lineTo(x, by + bh + 9); c.lineTo(x + 6, by + bh + 1); c.stroke();
+  c.fillStyle = '#2a1d15'; c.textAlign = 'center'; c.textBaseline = 'top';
+  lines.forEach((l, k) => c.fillText(l, x, by + 6 + k * 16));
+  c.restore();
+}
+
+/* ---------- Sound ---------- */
+let AC = null, soundOn = store.get('kress.snd', true);
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, dur, type, vol, when, slide) {
+  if (!soundOn) return; const a = ac(); if (!a) return;
+  const t0 = a.currentTime + (when || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type || 'square'; o.frequency.setValueAtTime(f, t0); if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t0 + dur);
+  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + dur + .02);
+}
+function babble(base, n, vol) { for (let k = 0; k < n; k++) tone(base * rand(.85, 1.35), .055, 'square', vol, k * .075); }
+function sndStar() { [523, 659, 784, 1047].forEach((f, k) => tone(f, .25, 'triangle', .09, k * .09)); }
+function sndBeer() { tone(380, .07, 'triangle', .08, 0, 1.6); tone(900, .18, 'sine', .03, .05, .7); }
+function sndHic() { tone(520, .09, 'sine', .07, 0, 1.8); }
+function sndCaught() { tone(330, .35, 'sawtooth', .06, 0, .5); tone(220, .45, 'sawtooth', .05, .15, .5); }
+function setSnd() { $('snd').textContent = soundOn ? 'Sound on' : 'Sound off'; }
+$('snd').addEventListener('click', () => { soundOn = !soundOn; store.set('kress.snd', soundOn); setSnd(); if (soundOn) tone(660, .1, 'triangle', .06); });
+setSnd();
+
+/* ---------- Game state ---------- */
+const PLAYER_SPEED = 178, HB = 11, HINT_AFTER = 20;
+let beers = [], beerCount = 0, tipsy = 0, hicT = 4, hicBubble = 0, state = 'menu', level = 1, hearts = 3, elapsed = 0, player, npcs, star, cam = { x: 0, y: 0 }, playerField = null, fieldT = 0, lastCatch = null, bannerT = 0, hinted = false, gameT = 0;
+
+const tileIdx = (x, y) => Math.floor(y / T) * GW + Math.floor(x / T);
+const tileCenter = i => ({ x: (i % GW) * T + T / 2, y: Math.floor(i / GW) * T + T / 2 });
+function solidAt(px, py) {
+  const tx = Math.floor(px / T), ty = Math.floor(py / T);
+  if (tx < 0 || ty < 0 || tx >= GW || ty >= GH) return true;
+  return grid[ty * GW + tx] !== 0;
+}
+const blocked = (x, y) => solidAt(x - HB, y - HB) || solidAt(x + HB, y - HB) || solidAt(x - HB, y + HB) || solidAt(x + HB, y + HB);
+function move(e, dx, dy) {
+  if (!blocked(e.x + dx, e.y)) e.x += dx;
+  else if (Math.abs(dy) < Math.abs(dx) * .6) for (const s of [1, -1]) { const n = s * Math.abs(dx) * .8; if (!blocked(e.x + dx, e.y + s * 9) && !blocked(e.x, e.y + n)) { e.y += n; break; } }
+  if (!blocked(e.x, e.y + dy)) e.y += dy;
+  else if (Math.abs(dx) < Math.abs(dy) * .6) for (const s of [1, -1]) { const n = s * Math.abs(dy) * .8; if (!blocked(e.x + s * 9, e.y + dy) && !blocked(e.x + n, e.y)) { e.x += n; break; } }
+}
+function bfs(src) {
+  const d = new Int16Array(GW * GH).fill(-1), q = new Int32Array(GW * GH);
+  let h = 0, t = 0; d[src] = 0; q[t++] = src;
+  while (h < t) {
+    const i = q[h++], x = i % GW;
+    for (const n of [i - 1, i + 1, i - GW, i + GW]) {
+      if (n < 0 || n >= d.length || d[n] >= 0 || grid[n] !== 0) continue;
+      if ((n === i - 1 && x === 0) || (n === i + 1 && x === GW - 1)) continue;
+      d[n] = d[i] + 1; q[t++] = n;
+    }
+  }
+  return d;
+}
+function los(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, n = Math.ceil(Math.hypot(dx, dy) / 10);
+  for (let k = 1; k < n; k++) { const i = tileIdx(a.x + dx * k / n, a.y + dy * k / n); if (grid[i] === 1) return false; }
+  return true;
+}
+const freeTiles = () => { const out = []; for (let i = 0; i < grid.length; i++) if (grid[i] === 0 && roomOf[i] >= 0) out.push(i); return out; };
+
+function makeNpc(def, tile, chase, wander, sense) {
+  const p = tileCenter(tile);
+  return { def, x: p.x, y: p.y, wp: null, field: null, state: 'wander', lost: 0, stun: 0, pauseT: rand(5, 9), hold: 0,
+    talkT: rand(1, 4), bubble: '', bubbleT: 0, chase, wander, sense, t: rand(0, 5), moving: false, fx: 0 };
+}
+
+function startLevel() {
+  genHouse();
+  const tiles = freeTiles();
+  const pTile = pick(tiles);
+  const pc = tileCenter(pTile);
+  player = { x: pc.x, y: pc.y, t: 0, moving: false, fx: 0, inv: 1.5 };
+  const dP = bfs(pTile);
+  let maxD = 0; for (const i of tiles) maxD = Math.max(maxD, dP[i]);
+  const far = tiles.filter(i => dP[i] >= maxD * .6);
+  const sTile = pick(far), sc = tileCenter(sTile);
+  star = { x: sc.x, y: sc.y };
+  const dS = bfs(sTile);
+  const spawnable = tiles.filter(i => dP[i] >= Math.min(20, maxD * .5) && dS[i] >= 3);
+  const cTile = pick(spawnable.length ? spawnable : far);
+  const bOpts = spawnable.filter(i => roomOf[i] !== roomOf[cTile]);
+  const bTile = pick(bOpts.length ? bOpts : spawnable.length ? spawnable : far);
+  const boost = Math.min(1.3, 1 + (level - 1) * .06);
+  npcs = [
+    makeNpc(CHAD, cTile, 128 * boost, 78, 7 * T),
+    makeNpc(BEANS, bTile, 112 * boost, 62, 8.5 * T)
+  ];
+  const used = new Set([pTile, sTile, cTile, bTile]);
+  const beerTiles = shuffle(tiles.filter(i => dP[i] >= 3 && dS[i] >= 2));
+  beers = []; const beerRooms = new Set();
+  for (const i of beerTiles) {
+    if (beers.length >= 6) break;
+    if (used.has(i) || beerRooms.has(roomOf[i])) continue;
+    beerRooms.add(roomOf[i]); const bc = tileCenter(i); beers.push({ x: bc.x, y: bc.y, ph: rand(0, 6) });
+  }
+  tipsy = 0; beerCount = 0; hicT = rand(3, 6); hicBubble = 0; $('beers').textContent = 0;
+  playerField = bfs(pTile); fieldT = 0;
+  elapsed = 0; hinted = false;
+  cam.x = player.x - W / Z / 2; cam.y = player.y - H / Z / 2;
+  $('lvl').textContent = level;
+  updateHearts();
+  banner('Find the gold star!', 2.2);
+}
+
+function updateHearts() { [...$('hearts').children].forEach((h, k) => h.classList.toggle('off', k >= hearts)); $('hearts').setAttribute('aria-label', hearts + ' hearts left'); }
+function banner(text, secs) { $('banner').textContent = text; $('banner').classList.add('show'); bannerT = secs; }
+function show(id) { for (const s of ['menu', 'talk', 'won', 'lost']) $(s).hidden = s !== id; }
+
+function say(n, text, secs) {
+  n.bubble = text; n.bubbleT = secs || 2.8;
+  const d = dist(n, player);
+  if (d < 10 * T) babble(n.def.pitch, Math.min(7, 3 + Math.floor(text.length / 8)), .035 * (1 - d / (10 * T)) + .005);
+}
+
+function pickWander(n) {
+  let target;
+  const seek = Math.min(.25 + level * .08, .65);
+  const pr = roomOf[tileIdx(player.x, player.y)];
+  if (Math.random() < seek && pr >= 0) { const r = rooms[pr]; target = randInt(r.y0, r.y1) * GW + randInt(r.x0, r.x1); }
+  if (target == null || grid[target] !== 0) { const tiles = freeTiles(); target = pick(tiles); }
+  n.field = bfs(target);
+}
+
+function stepNpc(n, dt) {
+  n.t += dt; n.moving = false;
+  n.talkT -= dt; if (n.bubbleT > 0) n.bubbleT -= dt;
+  if (n.talkT <= 0 && n.bubbleT <= 0) { say(n, pick(n.def.lines)); n.talkT = rand(3.5, 6.5); }
+  if (n.stun > 0) { n.stun -= dt; return; }
+  if (n.hold > 0) { n.hold -= dt; return; }
+
+  const d = dist(n, player);
+  const sees = elapsed > 3 && d < n.sense && los(n, player);
+  if (sees) {
+    if (n.state !== 'chase') { n.state = 'chase'; say(n, pick(n.def.spot), 1.8); n.talkT = rand(2.5, 4); banner(n.def.name + ' spotted you!', 1.6); }
+    n.lost = 0;
+  } else if (n.state === 'chase') {
+    n.lost += dt;
+    if (n.lost > 4) { n.state = 'wander'; n.field = null; n.wp = null; }
+  }
+  if (n.state === 'chase') {
+    n.pauseT -= dt;
+    if (n.pauseT <= 0) {
+      n.pauseT = rand(6, 10);
+      if (Math.random() < .5) { n.hold = n.def === BEANS ? 1.5 : 1.3; say(n, pick(n.def.pause), 1.8); n.talkT = rand(3, 5); return; }
+    }
+  }
+
+  const speed = (n.state === 'chase' ? n.chase : n.wander) * dt;
+  let tx, ty;
+  if (n.state === 'chase' && d < T * 1.6 && sees) { tx = player.x; ty = player.y; n.wp = null; }
+  else {
+    const field = n.state === 'chase' ? playerField : (n.field || (pickWander(n), n.field));
+    if (!n.wp || Math.hypot(n.wp.x - n.x, n.wp.y - n.y) < 3) {
+      const i = tileIdx(n.x, n.y);
+      if (field[i] <= 0) { if (n.state !== 'chase') pickWander(n); n.wp = null; return; }
+      let best = -1, bd = field[i];
+      for (const k of shuffle([i - 1, i + 1, i - GW, i + GW])) if (field[k] >= 0 && field[k] < bd) { bd = field[k]; best = k; }
+      if (best < 0) { n.wp = null; if (n.state !== 'chase') pickWander(n); return; }
+      n.wp = tileCenter(best);
+    }
+    tx = n.wp.x; ty = n.wp.y;
+  }
+  const dx = tx - n.x, dy = ty - n.y, L = Math.hypot(dx, dy);
+  if (L > .5) {
+    const s = Math.min(speed, L);
+    const bx = n.x, by = n.y;
+    move(n, dx / L * s, dy / L * s);
+    n.moving = true; n.fx = clamp(dx / L, -1, 1);
+    if (Math.hypot(n.x - bx, n.y - by) < s * .2) n.wp = null;
+  }
+}
+
+/* ---------- Input ---------- */
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) { keys.add(k); e.preventDefault(); }
+  if (state === 'talk' && (k === 'enter' || k === ' ')) { e.preventDefault(); $('talkBtn').click(); }
+});
+window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+window.addEventListener('blur', () => keys.clear());
+let joy = null;
+cv.addEventListener('pointerdown', e => { if (state !== 'play') return; joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY }; ac(); });
+window.addEventListener('pointermove', e => { if (joy && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const endJoy = e => { if (joy && e.pointerId === joy.id) joy = null; };
+window.addEventListener('pointerup', endJoy); window.addEventListener('pointercancel', endJoy);
+
+function inputVec() {
+  let x = 0, y = 0;
+  if (keys.has('arrowleft') || keys.has('a')) x -= 1;
+  if (keys.has('arrowright') || keys.has('d')) x += 1;
+  if (keys.has('arrowup') || keys.has('w')) y -= 1;
+  if (keys.has('arrowdown') || keys.has('s')) y += 1;
+  if (joy) {
+    const dx = joy.x - joy.ox, dy = joy.y - joy.oy, L = Math.hypot(dx, dy);
+    if (L > 8) { const m = Math.min(1, L / 50); x = dx / L * m; y = dy / L * m; }
+  }
+  const L = Math.hypot(x, y); if (L > 1) { x /= L; y /= L; }
+  return { x, y };
+}
+
+/* ---------- Loop ---------- */
+function caught(n) {
+  hearts--; updateHearts(); sndCaught();
+  const q = pick(n.def.lines);
+  lastCatch = { n, q };
+  babble(n.def.pitch, 8, .05);
+  state = 'talk'; joy = null; keys.clear();
+  drawPortrait($('talkFace'), n.def.look, n.def === CHAD ? '#f6c9a8' : '#bfe3cf');
+  $('talkName').textContent = n.def.name;
+  $('talkQuote').textContent = '“' + q + '”';
+  $('talkQuote').style.borderColor = n.def.color;
+  $('talkBtn').textContent = hearts > 0 ? pick(n.def.excuses) : 'Ugh, fine...';
+  show('talk');
+  setTimeout(() => $('talkBtn').focus(), 50);
+}
+$('talkBtn').addEventListener('click', () => {
+  if (state !== 'talk') return;
+  if (hearts <= 0) { lose(); return; }
+  const n = lastCatch.n;
+  n.stun = 2.4; n.state = 'wander'; n.field = null; n.wp = null; say(n, '...okay, later then.', 2);
+  player.inv = 2.2;
+  state = 'play'; show(null);
+});
+function lose() {
+  state = 'lost';
+  const n = lastCatch.n;
+  drawPortrait($('lostFace'), n.def.look, n.def === CHAD ? '#f6c9a8' : '#bfe3cf');
+  $('lostTitle').textContent = n.def.name + ' got you';
+  $('lostQuote').textContent = '“' + lastCatch.q + '”';
+  $('lostQuote').style.borderColor = n.def.color;
+  $('lostMsg').textContent = 'You’re stuck in this conversation forever. You made it to level ' + level + '.';
+  saveBest();
+  show('lost'); setTimeout(() => $('retry').focus(), 50);
+}
+function win() {
+  state = 'won'; sndStar();
+  $('wonMsg').textContent = 'You found the gold star in ' + fmt(elapsed) + ' with ' + hearts + (hearts === 1 ? ' heart' : ' hearts') + ' left' + (beerCount ? ', after ' + beerCount + (beerCount === 1 ? ' beer.' : ' beers.') : '.');
+  level++; saveBest();
+  show('won'); setTimeout(() => $('next').focus(), 50);
+}
+function saveBest() { const b = store.get('kress.best', 0); if (level > b) store.set('kress.best', level); }
+function bestLine() { const b = store.get('kress.best', 0); $('bestLine').textContent = b > 1 ? 'Best: level ' + b : ''; }
+
+function update(dt) {
+  gameT += dt;
+  if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) $('banner').classList.remove('show'); }
+  if (state !== 'play') return;
+  elapsed += dt;
+  $('time').textContent = fmt(elapsed);
+  const v = inputVec();
+  if (tipsy > 0) {
+    // tipsy: the direction you walk drifts back and forth a little
+    const a = tipsy * (.45 * Math.sin(gameT * 1.7) + .25 * Math.sin(gameT * 3.3 + 1));
+    const ca = Math.cos(a), sa = Math.sin(a), vx = v.x * ca - v.y * sa; v.y = v.x * sa + v.y * ca; v.x = vx;
+    tipsy = Math.max(0, tipsy - dt * .01);
+    hicT -= dt; if (hicBubble > 0) hicBubble -= dt;
+    if (hicT <= 0) { hicT = rand(4, 9) / (.5 + tipsy); if (tipsy > .25) { hicBubble = 1; sndHic(); } }
+  }
+  for (let k = beers.length - 1; k >= 0; k--) if (dist(player, beers[k]) < 26) {
+    beers.splice(k, 1); beerCount++; tipsy = Math.min(1, tipsy + .2); $('beers').textContent = beerCount; sndBeer();
+    banner(beerCount === 1 ? 'Cheers! Feeling a little loose.' : tipsy >= .8 ? 'Okay, pretty tipsy now.' : 'Another one. Feeling tipsy.', 1.8);
+  }
+  player.moving = Math.hypot(v.x, v.y) > .05;
+  if (player.moving) { move(player, v.x * PLAYER_SPEED * dt, v.y * PLAYER_SPEED * dt); player.t += dt; if (Math.abs(v.x) > .1) player.fx = clamp(v.x, -1, 1); }
+  if (player.inv > 0) player.inv -= dt;
+  fieldT -= dt; if (fieldT <= 0) { playerField = bfs(tileIdx(player.x, player.y)); fieldT = .25; }
+  for (const n of npcs) {
+    stepNpc(n, dt);
+    if (state === 'play' && player.inv <= 0 && n.stun <= 0 && dist(n, player) < 26) { caught(n); return; }
+  }
+  // keep the two from stacking on each other
+  const [a, b] = npcs, dd = dist(a, b);
+  if (dd < 22 && dd > .01) { const px = (a.x - b.x) / dd * .6, py = (a.y - b.y) / dd * .6; move(a, px, py); move(b, -px, -py); }
+  if (!hinted && elapsed > HINT_AFTER) { hinted = true; banner('Hint: follow the gold arrow', 2.5); }
+  if (dist(player, star) < 28) win();
+  // camera
+  const vw = W / Z, vh = H / Z;
+  const tx = WW < vw ? (WW - vw) / 2 : clamp(player.x - vw / 2, -T, WW - vw + T);
+  const ty = WH < vh ? (WH - vh) / 2 : clamp(player.y - vh / 2 - 20, -T * 2, WH - vh + T);
+  const k = 1 - Math.pow(.0001, dt);
+  cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
+}
+
+function render() {
+  const c = ctx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = '#6fa35a'; c.fillRect(0, 0, W, H);
+  if (!grid) return;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (tipsy > 0) { c.translate(W / 2, H / 2); c.rotate(tipsy * .045 * Math.sin(gameT * 1.1)); const zs = 1 + tipsy * .025 * Math.sin(gameT * .8); c.scale(zs, zs); c.translate(-W / 2, -H / 2); }
+  c.scale(Z, Z); c.translate(-cam.x, -cam.y);
+  const vw = W / Z, vh = H / Z;
+  // grass texture
+  c.fillStyle = 'rgba(40,90,30,.25)';
+  const gx0 = Math.floor(cam.x / 30), gy0 = Math.floor(cam.y / 30);
+  for (let gy = gy0; gy < gy0 + vh / 30 + 2; gy++) for (let gx = gx0; gx < gx0 + vw / 30 + 2; gx++) if (hash(gx, gy) > .6) c.fillRect(gx * 30 + hash(gy, gx) * 20, gy * 30 + 10, 2, 6);
+  const x0 = clamp(Math.floor(cam.x / T), 0, GW - 1), x1 = clamp(Math.ceil((cam.x + vw) / T), 0, GW - 1);
+  const y0 = clamp(Math.floor(cam.y / T), 0, GH - 1), y1 = clamp(Math.ceil((cam.y + vh) / T) + 1, 0, GH - 1);
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) drawFloor(c, tx, ty);
+  // room names
+  c.save(); c.font = '400 26px "Lilita One", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(40,25,15,.13)';
+  for (const r of rooms) c.fillText(r.type.n.toUpperCase(), (r.x0 + RW / 2) * T, (r.y0 + RH / 2) * T);
+  c.restore();
+  const inView = f => f.x * T < cam.x + vw + T && (f.x + f.w) * T > cam.x - T && f.y * T < cam.y + vh + T * 2 && (f.y + f.h) * T > cam.y - T;
+  for (const f of furn) if (!f.solid && inView(f)) drawFurn(c, f, gameT);
+  for (const f of furn) if (f.solid && inView(f)) drawFurn(c, f, gameT);
+  // star
+  const sb = Math.sin(gameT * 3) * 3;
+  const g = c.createRadialGradient(star.x, star.y + sb, 2, star.x, star.y + sb, 46);
+  g.addColorStop(0, 'rgba(255,215,60,.6)'); g.addColorStop(1, 'rgba(255,215,60,0)');
+  c.fillStyle = g; c.fillRect(star.x - 46, star.y - 46 + sb, 92, 92);
+  drawStar(c, star.x, star.y + sb, 17, Math.sin(gameT * 1.5) * .3);
+  c.fillStyle = '#ffc62b'; c.fill(); c.strokeStyle = '#a86a00'; c.lineWidth = 2.5; c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.7)'; circ(c, star.x - 4, star.y - 5 + sb, 3); c.fill();
+  for (let k = 0; k < 3; k++) { const a = gameT * 1.4 + k * 2.1; c.fillStyle = `rgba(255,240,160,${.5 + .5 * Math.sin(gameT * 5 + k)})`; circ(c, star.x + Math.cos(a) * 26, star.y + sb + Math.sin(a) * 20, 2); c.fill(); }
+  for (const b of beers) drawBeer(c, b.x, b.y + Math.sin(gameT * 2.5 + b.ph) * 2, gameT + b.ph);
+  // people, back to front
+  const people = [{ e: player, look: LOOK_YOU, talk: false }, ...npcs.map(n => ({ e: n, look: n.def.look, talk: n.bubbleT > 0 }))].sort((a, b) => a.e.y - b.e.y);
+  for (const p of people) {
+    if (p.e === player && player.inv > 0 && Math.floor(gameT * 10) % 2) continue;
+    if (p.e === player && tipsy > 0) {
+      c.save(); c.translate(p.e.x, p.e.y + 12); c.rotate(tipsy * .12 * Math.sin(gameT * 2.2));
+      drawPerson(c, 0, 0, p.look, p.e.t, p.e.moving, p.e.fx, 1, false);
+      c.fillStyle = `rgba(235,80,90,${tipsy * .55})`; circ(c, -6.5 + p.e.fx * 1.6, -47, 2.6); c.fill(); circ(c, 6.5 + p.e.fx * 1.6, -47, 2.6); c.fill();
+      c.restore();
+      if (hicBubble > 0) { c.save(); c.globalAlpha = Math.min(1, hicBubble * 3); c.fillStyle = '#fff'; c.strokeStyle = '#2a1d15'; c.lineWidth = 3; c.font = '900 14px Nunito, sans-serif'; c.textAlign = 'center'; c.strokeText('*hic*', p.e.x + 16, p.e.y - 50 - (1 - hicBubble) * 10); c.fillText('*hic*', p.e.x + 16, p.e.y - 50 - (1 - hicBubble) * 10); c.restore(); }
+    } else drawPerson(c, p.e.x, p.e.y + 12, p.look, p.e.t, p.e.moving, p.e.fx, 1, p.talk);
+    if (p.e.stun > 0 || p.e.hold > 0) { c.fillStyle = 'rgba(255,255,255,.9)'; c.font = '900 14px Nunito, sans-serif'; c.textAlign = 'center'; c.fillText(p.e.hold > 0 ? '?' : '...', p.e.x + 14, p.e.y - 52); }
+  }
+  for (const n of npcs) if (n.bubbleT > 0) drawBubble(c, n.x, n.y - 56, n.bubble, n.def.color, Math.min(1, n.bubbleT * 3));
+  // hint arrow
+  if (state === 'play' && elapsed > HINT_AFTER) {
+    const a = Math.atan2(star.y - player.y, star.x - player.x), r = 42 + Math.sin(gameT * 6) * 3;
+    c.save(); c.translate(player.x + Math.cos(a) * r, player.y - 14 + Math.sin(a) * r); c.rotate(a);
+    c.fillStyle = '#ffc62b'; c.strokeStyle = '#7a4a00'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(12, 0); c.lineTo(-7, -9); c.lineTo(-3, 0); c.lineTo(-7, 9); c.closePath(); c.fill(); c.stroke();
+    c.restore();
+  }
+  // joystick
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (joy && state === 'play') {
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 3; circ(c, joy.ox, joy.oy, 50); c.stroke();
+    const dx = joy.x - joy.ox, dy = joy.y - joy.oy, L = Math.hypot(dx, dy), m = Math.min(L, 50) / (L || 1);
+    c.fillStyle = 'rgba(255,255,255,.6)'; circ(c, joy.ox + dx * m, joy.oy + dy * m, 20); c.fill();
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt); render();
+  requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange', () => { last = performance.now(); keys.clear(); joy = null; });
+
+function begin(reset) {
+  ac();
+  if (reset) { level = 1; hearts = 3; }
+  startLevel(); state = 'play'; show(null);
+}
+$('play').addEventListener('click', () => begin(true));
+$('retry').addEventListener('click', () => begin(true));
+$('next').addEventListener('click', () => { hearts = Math.min(3, hearts + 1); begin(false); });
+
+drawPortrait($('castYou'), LOOK_YOU, '#f7d9a6');
+drawPortrait($('castChad'), LOOK_CHAD, '#f6c9a8');
+drawPortrait($('castBeans'), LOOK_BEANS, '#bfe3cf');
+document.fonts && document.fonts.ready.then(() => { drawPortrait($('castYou'), LOOK_YOU, '#f7d9a6'); drawPortrait($('castChad'), LOOK_CHAD, '#f6c9a8'); drawPortrait($('castBeans'), LOOK_BEANS, '#bfe3cf'); });
+bestLine();
+genHouse(); star = { x: -999, y: -999 }; player = { x: WW / 2, y: WH / 2 }; npcs = []; cam.x = WW / 2 - W / Z / 2; cam.y = WH / 2 - H / Z / 2;
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
