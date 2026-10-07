@@ -76,8 +76,8 @@
     <p class="sub">Find the gold chest</p>
     <ul class="cast">
       <li><canvas id="castBoy" width="128" height="128"></canvas><span>You</span></li>
-      <li><canvas id="castHarv" width="128" height="128"></canvas><span>Run</span></li>
-      <li><canvas id="castWine" width="128" height="128"></canvas><span>Dodge</span></li>
+      <li><canvas id="castHarv" width="128" height="128"></canvas><span>Cashion</span></li>
+      <li><canvas id="castWine" width="128" height="128"></canvas><span>Ethan</span></li>
     </ul>
     <p class="how">Drag anywhere to run. Arrow keys or WASD on a keyboard. You have 3 hearts, and a gold arrow shows up to help you find the chest.</p>
     <button id="play" type="button">Play</button>
@@ -89,7 +89,7 @@
   <div class="card">
     <h1>Win Delta!</h1>
     <p class="msg" id="wonMsg"></p>
-    <p class="small">Next level: a new land, and he's a little faster.</p>
+    <p class="small">Next level: a new land, and Cashion is a little faster.</p>
     <button id="next" type="button">Next level</button>
   </div>
 </section>
@@ -639,7 +639,7 @@ function update(dt) {
   if (pStun > 0) { pStun -= dt; player.moving = false; }
   else { const [ix, iy] = inputVec(); if (ix || iy) moveBody(player, ix * player.speed, iy * player.speed, dt); else player.moving = false; }
 
-  if (!released && S.time >= S.release) { released = true; banner('Here he comes. RUN!', 1600); }
+  if (!released && S.time >= S.release) { released = true; banner('Here comes Cashion. RUN!', 1600); }
   if (released) {
     if (harv.stun > 0) { harv.stun -= dt; harv.moving = false; }
     else steer(harv, player.x, player.y, harv.speed, dt);
@@ -707,7 +707,7 @@ function lose() {
   harv.bubble = { text: 'I WENT TO HARVARD!', t: 99 };
   tone(440, .5, 'sawtooth', .07, 0, 90);
   say('I went to Harvard!', 1.35, 1.1, true);
-  $('lostMsg').textContent = 'He got you on level ' + S.level + ' at ' + fmt(S.time) + '.';
+  $('lostMsg').textContent = 'Cashion got you on level ' + S.level + ' at ' + fmt(S.time) + '.';
   setTimeout(() => { $('lost').hidden = false; $('retry').focus(); }, 900);
 }
 function burst(x, y, cols, n) {
