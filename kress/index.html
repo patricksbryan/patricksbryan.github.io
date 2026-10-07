@@ -152,7 +152,7 @@ function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); }
 /* ---------- Characters ---------- */
 const LOOK_YOU = { skin: '#f1c7a1', hair: '#2b1d14', style: 'short', top: '#e8743a', bottom: '#33507f', legs: '#33507f', shoes: '#f4f4f4' };
 const LOOK_CHAD = { skin: '#f3c49b', hair: '#d8b56b', hair2: '#b8954d', style: 'flow', top: null, bottom: '#c8342b', stripe: '#ffffff', legs: '#f3c49b', shoes: '#222' };
-const LOOK_BEANS = { skin: '#ecbd94', hair: '#5e3b20', hair2: '#43291a', style: 'part', top: '#2d8a5f', polo: true, bottom: '#cbb48a', legs: '#ecbd94', shoes: '#7a5a3a', bags: true };
+const LOOK_BEANS = { skin: '#ecbd94', hair: '#5e3b20', hair2: '#43291a', style: 'part', top: '#f7f7f4', outline: 'rgba(60,45,35,.35)', bottom: '#cbb48a', legs: '#ecbd94', shoes: '#7a5a3a' };
 
 const CHAD = {
   name: 'Chad', look: LOOK_CHAD, color: '#c8342b', pitch: 330,
@@ -174,14 +174,16 @@ const BEANS = {
   lines: [
     'Wanna play Call of Duty?',
     'Hop on Call of Duty?',
+    'One game of COD. Just one.',
+    'Bro, I need a squad for COD.',
+    'Call of Duty? Come on, man.',
+    "We could be playing Call of Duty right now.",
     "Firehouse Subs or Jersey Mike's?",
-    "Jersey Mike's or Firehouse? Gotta pick.",
-    "Dude, I'm so hungover.",
-    'I am SO hungover right now.'
+    "Dude, I'm so hungover."
   ],
-  spot: ['Dude! Come here!', 'Ayy, you wanna play COD?'],
-  pause: ['Ugh... so hungover...', 'Hold on, my head...'],
-  excuses: ['Not right now!', 'Drink some water, dude!', 'Maybe later!', 'Gotta go!']
+  spot: ['Dude! Wanna play COD?', 'Ayy! Hop on Call of Duty!'],
+  pause: ['Hold on, checking my COD loadout...', 'Wait, my controller died.'],
+  excuses: ['Not right now!', "I'm bad at COD!", 'Maybe later!', 'Gotta go!']
 };
 
 function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
@@ -197,6 +199,7 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
   }
   // torso
   c.fillStyle = look.top || look.skin; rr(c, -11, -41, 22, 20, 6); c.fill();
+  if (look.outline) { c.strokeStyle = look.outline; c.lineWidth = 1; c.stroke(); }
   if (!look.top) {
     c.strokeStyle = 'rgba(150,90,50,.45)'; c.lineWidth = 1.2; c.lineCap = 'round';
     c.beginPath(); c.moveTo(-7.5, -34); c.quadraticCurveTo(-4, -31.5, -1, -33.5); c.moveTo(7.5, -34); c.quadraticCurveTo(4, -31.5, 1, -33.5);
@@ -217,7 +220,7 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
   // arms
   for (const sd of [-1, 1]) {
     c.save(); c.translate(sd * 13, -39); c.rotate(-sd * 0 + sw * .38 * sd);
-    if (look.top) { c.fillStyle = look.top; rr(c, -3, 0, 6, 6, 2); c.fill(); }
+    if (look.top) { c.fillStyle = look.top; rr(c, -3, 0, 6, 6, 2); c.fill(); if (look.outline) { c.strokeStyle = look.outline; c.lineWidth = 1; c.stroke(); } }
     c.fillStyle = look.skin; c.fillRect(-2.4, look.top ? 5 : 0, 4.8, look.top ? 8 : 13);
     circ(c, 0, 14, 2.8); c.fill();
     c.restore();
