@@ -320,9 +320,9 @@ function steer(e, tx, ty, speed, dt) {
 /* ---------- State ---------- */
 const S = { state: 'menu', level: 1, time: 0, release: 3, hint: 14 };
 let T = 0;
-const body = (x, y, speed) => ({ x, y, r: 12, speed, face: 1, moving: false, bubble: null, stun: 0, detour: 0, detourSign: 1, stuck: 0, pause: 0 });
+const body = (x, y, speed) => ({ x, y, r: 12, speed, face: 1, moving: false, bubble: null, stun: 0, detour: 0, detourSign: 1, stuck: 0, pause: 0, seek: 0 });
 let player, harv, wino, games = [], wineTarget = null;
-let hearts = 3, immune = 0, pStun = 0, nextYell = 0, nextWine = 0, released = false;
+let hearts = 3, immune = 0, pStun = 0, nextYell = 0, nextWine = 0, nextSeek = 0, released = false;
 let particles = [];
 let best = store.get('windelta.best', 0);
 
@@ -341,13 +341,25 @@ function freeGround(minFromStart) {
   }
   return { x: WS / 2, y: WS - M - 100 };
 }
+// Free ground in a ring around a point; Ethan's games and Ethan himself stay near the player.
+function freeNear(cx, cy, rmin, rmax, offscreen) {
+  for (let i = 0; i < 200; i++) {
+    const a = rand(0, Math.PI * 2), d = rand(rmin, rmax), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    if (x < M + 40 || y < M + 40 || x > WS - M - 40 || y > WS - M - 40) continue;
+    if (Math.abs(y - riverY(x)) < RW / 2 + 40) continue;
+    if (obstacles.some(o => Math.hypot(o.x - x, o.y - y) < o.r + 30)) continue;
+    if (offscreen && onScreen({ x, y })) continue;
+    return { x, y };
+  }
+  return null;
+}
 function spawnGames(n) {
-  for (let i = 0; i < n; i++) { const p = freeGround(200); games.push({ x: p.x, y: p.y, name: pick(GAME_NAMES), col: pick(GAME_COLORS), ph: Math.random() * 6 }); }
+  for (let i = 0; i < n; i++) { const p = freeNear(player.x, player.y, 140, 480) || freeGround(200); games.push({ x: p.x, y: p.y, name: pick(GAME_NAMES), col: pick(GAME_COLORS), ph: Math.random() * 6 }); }
 }
 function newWineTarget() {
   if (!games.length) spawnGames(5);
   let bestG = null, bd = 1e9;
-  for (const g of games) { const d = dist(g, wino) + rand(0, 500); if (d < bd) { bd = d; bestG = g; } }
+  for (const g of games) { const d = dist(g, wino) * 0.5 + dist(g, player) + rand(0, 150); if (d < bd) { bd = d; bestG = g; } }
   wineTarget = bestG;
 }
 
@@ -365,11 +377,11 @@ function startLevel() {
   }
   hp = hp || freeGround(900);
   harv = body(hp.x, hp.y, Math.min(205, 140 + 14 * (L - 1)));
-  const wp = freeGround(400);
-  wino = body(wp.x, wp.y, 70);
+  const wp = freeNear(start.x, start.y, 220, 380) || freeGround(300);
+  wino = body(wp.x, wp.y, 100);
   games = []; spawnGames(6); newWineTarget();
   S.time = 0; released = false; hearts = 3; immune = 0; pStun = 0;
-  nextYell = S.release; nextWine = rand(2, 4);
+  nextYell = S.release; nextWine = rand(1.5, 3); nextSeek = rand(4, 6);
   particles = [];
   paintHearts();
   $('lvl').textContent = L;
@@ -656,7 +668,21 @@ function update(dt) {
     }
   } else harv.moving = false;
 
+  // Every so often Ethan comes looking for you.
+  if (S.time >= nextSeek) {
+    nextSeek = S.time + rand(7, 11);
+    wino.seek = 4.5; wino.pause = 0;
+    const line = pick(['Hey! Want to play some Xbox?', 'Wait up! Have you seen my Halo?', 'Hey! Try this Cabernet!', 'Yo! Call of Duty at my place?', 'Hey! I just opened a Malbec!']);
+    wino.bubble = { text: line, t: 2.4 };
+    if (onScreen(wino) || dist(wino, player) < 450) say(line, 0.75, 1, false);
+  }
+  // If he has wandered far away, he shows up again nearby (off screen).
+  if (dist(wino, player) > 650 && !onScreen(wino)) {
+    const np = freeNear(player.x, player.y, 330, 480, true);
+    if (np && side(np.x, np.y) === side(player.x, player.y)) { wino.x = np.x; wino.y = np.y; newWineTarget(); }
+  }
   if (wino.pause > 0) { wino.pause -= dt; wino.moving = false; }
+  else if (wino.seek > 0) { wino.seek -= dt; if (steer(wino, player.x, player.y, wino.speed * 1.2, dt) < 26) wino.seek = 0; }
   else if (wineTarget) {
     const d = steer(wino, wineTarget.x, wineTarget.y, wino.speed, dt);
     if (d < 18) {
@@ -678,7 +704,7 @@ function update(dt) {
   }
 
   if (pStun <= 0 && immune <= 0 && dist(player, wino) < 30) {
-    pStun = 0.8; immune = 2.5; wino.pause = Math.max(wino.pause, 1.2);
+    pStun = 0.6; immune = 1.6; wino.seek = 0; wino.pause = Math.max(wino.pause, 1.2);
     const line = pick(['Hey. Have you seen my Xbox?', 'Want to play Halo? I brought a Pinot.', 'Wait, did you take my Call of Duty?', 'Careful! This is a Cabernet.']);
     wino.bubble = { text: line, t: 1.8 };
     tone(300, .18, 'triangle', .1, 0, 140);
