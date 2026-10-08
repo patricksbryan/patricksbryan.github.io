@@ -51,7 +51,7 @@
   .card h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(32px, 10vw, 50px); line-height: 1.02; color: var(--pumpkin); -webkit-text-stroke: 2px var(--ink); text-shadow: 0 4px 0 var(--ink); text-align: center; }
   .card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.05; color: var(--ink); text-align: center; }
   .card .sub { margin: 0; text-align: center; font-size: 15px; font-weight: 900; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
-  .cast { display: flex; justify-content: center; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .cast { display: flex; justify-content: center; gap: 10px; margin: 0; padding: 0; list-style: none; }
   .cast li { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; max-width: 120px; }
   .cast canvas { width: 100%; max-width: 100px; aspect-ratio: 1; border-radius: 14px; border: 2px solid var(--ink); }
   .cast span { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); font-weight: 900; text-align: center; }
@@ -91,8 +91,9 @@
       <li><canvas id="castYou" width="160" height="160"></canvas><span>You</span></li>
       <li><canvas id="castJack" width="160" height="160"></canvas><span>Jack</span></li>
       <li><canvas id="castPat" width="160" height="160"></canvas><span>Pat</span></li>
+      <li><canvas id="castGus" width="160" height="160"></canvas><span>Gus</span></li>
     </ul>
-    <p class="how">Somewhere in Manhattan is <b>your TV</b>, and October Road is about to start. Jack and Pat want <b>just 2 minutes of your time</b> to talk about computer software, so don't let them catch you. Street food carts give you a speed boost, but go easy on the <b>street meat</b>. Drag anywhere to walk, or use the arrow keys or WASD. Watch out for cabs.</p>
+    <p class="how">Somewhere in Manhattan is <b>your TV</b>, and October Road is about to start. Jack and Pat want <b>just 2 minutes of your time</b> to talk about computer software, so don't let them catch you. Gus just wants to know where the Bud Lights are and how to get to the 99, but he'll hold you up. Street food carts give you a speed boost, but go easy on the <b>street meat</b>. Drag anywhere to walk, or use the arrow keys or WASD. Watch out for cabs.</p>
     <button id="play" type="button">Play</button>
     <p class="small" id="bestLine"></p>
   </div>
@@ -164,6 +165,7 @@ const LOOK_YOU = { skin: '#f1c7a1', hair: '#3a2618', style: 'beanie', beanie: '#
 const LOOK_POOP = Object.assign({}, LOOK_YOU, { stain: true });
 const LOOK_JACK = { skin: '#f6d0b1', freckles: true, hair: '#d2491c', hair2: '#9e3212', style: 'straight', top: '#22304d', suit: true, long: true, tie: '#c8341f', bottom: '#22304d', legs: '#22304d', shoes: '#141414', case: '#7a4a26', case2: '#4e2f17' };
 const LOOK_PAT = { skin: '#eabb92', hair: '#6e4528', hair2: '#4a2b16', style: 'wavy', top: '#565c66', suit: true, long: true, tie: '#2e6fd0', bottom: '#565c66', legs: '#565c66', shoes: '#2a1a10', case: '#1f1f22', case2: '#000' };
+const LOOK_GUS = { skin: '#f0c29c', hair: '#6b4423', style: 'cap', cap: '#0c2340', capLogo: '#bd3039', stubble: true, top: '#8b9099', boston: true, long: true, bottom: '#3d5a8a', legs: '#3d5a8a', shoes: '#f4f4f4' };
 const VENDOR_LOOKS = [
   { skin: '#c99067', hair: '#1d1410', style: 'cap', cap: '#2b62b8', top: '#f4f4f0', apron: true, bottom: '#3a3a3a', legs: '#3a3a3a', shoes: '#222' },
   { skin: '#8d5a3b', hair: '#111', style: 'cap', cap: '#c0392b', top: '#f4f4f0', apron: true, bottom: '#2f3b4a', legs: '#2f3b4a', shoes: '#222', mustache: true },
@@ -209,6 +211,24 @@ const PAT = {
   excuses: ['Send me a brochure!', 'We already have a vendor!', "Can't talk, TV time!", 'Maybe next quarter!'],
   release: ["Let's touch base later!", "I'll leave you my card!"]
 };
+const GUS = {
+  name: 'Gus', look: LOOK_GUS, color: '#bd3039', bg: '#d9e2ee', pitch: 160, gus: true,
+  lines: [
+    'Yo, you seen any Bud Lights around here?',
+    "Where's the 99? Wicked serious.",
+    'Is there a 99 in this town or what?',
+    'Bud Light. Cold one. Seen any, guy?',
+    'How do I get to the 99 from here?',
+    "This bodega doesn't even have Bud Light!",
+    "Where's the nearest 99? I'm starvin'.",
+    'You know if the 99 does boneless wings here?'
+  ],
+  spot: ['Yo! Buddy!', "Hey guy! C'mere a sec!"],
+  pause: ['Hold on, is that a Bud Light?', 'Wait, was that the 99?'],
+  gross: ['Wicked rank, guy!', 'Oh, come ON, dude!', "That's worse than the Pike at rush hour."],
+  hit: ["I'm walkin' heah!", 'Watch it, pal!'],
+  poop: ['Wicked gross, guy.', "...I'm gonna go find the 99."]
+};
 const GROSS = ["Whoa. Let's take this offline.", "I'll... circle back.", 'Is that... the cloud?', "I'll just email you!", 'Ugh! Not a good fit!'];
 const TAXI_LINES = ["HEY! I'M DRIVIN' HERE!", 'Watch it, pal!', 'Get outta the street!', 'Move it!'];
 
@@ -237,6 +257,10 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
     c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-5.5, -41); c.lineTo(-1, -29); c.moveTo(5.5, -41); c.lineTo(1, -29); c.stroke();
     c.fillStyle = 'rgba(0,0,0,.35)'; circ(c, 0, -25.5, .9); c.fill();
   }
+  if (look.boston) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; rr(c, -7, -30, 14, 6, 2); c.fill();
+    c.fillStyle = '#bd3039'; c.font = '900 4.6px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('BOSTON', 0, -35);
+  }
   if (look.apron) { c.fillStyle = '#ffffff'; rr(c, -8, -36, 16, 22, 3); c.fill(); c.strokeStyle = 'rgba(0,0,0,.15)'; c.lineWidth = 1; c.stroke(); }
   // pants
   c.fillStyle = look.bottom; rr(c, -10.5, -25, 21, 11, 3); c.fill();
@@ -264,6 +288,7 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
   const ex = fx * 1.6;
   c.fillStyle = '#2a1d15'; circ(c, -4 + ex, -51, 1.7); c.fill(); circ(c, 4 + ex, -51, 1.7); c.fill();
   if (look.freckles) { c.fillStyle = 'rgba(180,90,50,.55)'; for (const [a, b] of [[-6, -47.5], [-4.5, -46.5], [-7, -46], [6, -47.5], [4.5, -46.5], [7, -46]]) { circ(c, a + ex, b, .7); c.fill(); } }
+  if (look.stubble) { c.fillStyle = 'rgba(107,68,35,.25)'; c.beginPath(); c.ellipse(ex, -44.5, 7, 3.5, 0, 0, Math.PI * 2); c.fill(); }
   if (look.mustache) { c.fillStyle = look.hair; c.beginPath(); c.ellipse(ex, -47.6, 4.2, 1.5, 0, 0, Math.PI * 2); c.fill(); }
   if (talking) { c.fillStyle = '#7a2a22'; c.beginPath(); c.ellipse(ex, -45.5, 2.6, 2 + Math.abs(Math.sin(t * 18)) * 1.4, 0, 0, Math.PI * 2); c.fill(); }
   else if (look.stain) { c.strokeStyle = '#7a3b2a'; c.lineWidth = 1.3; c.beginPath(); c.arc(ex, -43.5, 3, Math.PI + .35, -.35); c.stroke(); }
@@ -297,6 +322,7 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
     rr(c, -12, -55, 24, 7, 3); c.fill();
     c.fillStyle = look.cap; c.beginPath(); c.arc(0, -54, 12, Math.PI, 0); c.closePath(); c.fill();
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(ex * 2, -54.5, 10, 2.6, 0, 0, Math.PI * 2); c.fill();
+    if (look.capLogo) { c.fillStyle = look.capLogo; c.font = '900 8px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('B', ex * 1.5, -60); }
   } else {
     c.beginPath(); c.arc(0, -52, 11.6, Math.PI, 0); c.lineTo(11.6, -52); c.quadraticCurveTo(0, -58, -11.6, -52); c.closePath(); c.fill();
   }
@@ -739,6 +765,7 @@ setSnd();
 const PLAYER_SPEED = 178, HB = 11, HINT_AFTER = 20, GUT_DECAY = 40;
 let state = 'menu', level = 1, hearts = 3, elapsed = 0, gameT = 0, player, npcs = [], carts = [], taxis = [], tv, cam = { x: 0, y: 0 };
 let playerField = null, fieldT = 0, lastCatch = null, bannerT = 0, hinted = false;
+let sideTiles = [];
 let gut = 0, gutT = 0, fartT = 0, boostT = 0, boostMul = 1, meats = 0, snacks = 0, clouds = [], popT = 0, popMsg = '', dieT = 0, pooped = false;
 
 const tileIdx = (x, y) => Math.floor(y / T) * GW + Math.floor(x / T);
@@ -780,7 +807,7 @@ const openSpot = i => !obstacles.some(o => Math.abs(o.x - i % GW) <= 1 && Math.a
 function makeNpc(def, tile, chase, wander, sense) {
   const p = tileCenter(tile);
   return { def, x: p.x, y: p.y, wp: null, field: null, state: 'wander', lost: 0, stun: 0, taxiInv: 0, pauseT: rand(5, 9), hold: 0,
-    talkT: rand(1, 4), bubble: '', bubbleT: 0, chase, wander, sense, t: rand(0, 5), moving: false, fx: 0 };
+    talkT: rand(1, 4), bubble: '', bubbleT: 0, chase, wander, sense, t: rand(0, 5), moving: false, fx: 0, offT: 0, popAfter: rand(5, 9), gusCd: 0 };
 }
 
 function makeTaxis(n) {
@@ -815,16 +842,21 @@ function startLevel() {
   const far = open.filter(i => dP[i] >= maxD * .62);
   const tvTile = pick(far); tv = tileCenter(tvTile);
   const dS = bfs(tvTile);
-  const spawnable = tiles.filter(i => dP[i] >= Math.min(24, maxD * .45) && dS[i] >= 5);
-  const jTile = pick(spawnable.length ? spawnable : far);
-  const pOpts = spawnable.filter(i => blockOf[i] !== blockOf[jTile] && dist(tileCenter(i), tileCenter(jTile)) > 8 * T);
-  const patTile = pick(pOpts.length ? pOpts : spawnable.length ? spawnable : far);
-  const boost = Math.min(1.3, 1 + (level - 1) * .06);
+  // Jack and Pat start a few blocks away (not across town), so they find you early
+  const ring = (lo, hi) => tiles.filter(i => dP[i] >= lo && dP[i] <= hi && dS[i] >= 5);
+  const jOpts = ring(12, 22), jTile = pick(jOpts.length ? jOpts : far);
+  const pOpts = ring(12, 24).filter(i => dist(tileCenter(i), tileCenter(jTile)) > 8 * T);
+  const patTile = pick(pOpts.length ? pOpts : jOpts.length ? jOpts : far);
+  const gOpts = ring(7, 16).filter(i => i !== jTile && i !== patTile), gusTile = pick(gOpts.length ? gOpts : far);
+  const boost = Math.min(1.15, 1 + (level - 1) * .03);
   npcs = [
-    makeNpc(JACK, jTile, 128 * boost, 80, 7.5 * T),
-    makeNpc(PAT, patTile, 116 * boost, 66, 9 * T)
+    makeNpc(JACK, jTile, 118 * boost, 88, 10 * T),
+    makeNpc(PAT, patTile, 108 * boost, 80, 11 * T),
+    makeNpc(GUS, gusTile, 100, 72, 7 * T)
   ];
-  carts = []; const used = new Set([pTile, tvTile, jTile, patTile]), cartBlocks = new Set(), mix = shuffle(CART_MIX.slice());
+  npcs[2].popAfter = rand(10, 16);
+  sideTiles = tiles;
+  carts = []; const used = new Set([pTile, tvTile, jTile, patTile, gusTile]), cartBlocks = new Set(), mix = shuffle(CART_MIX.slice());
   for (const i of shuffle(open.filter(i => dP[i] >= 4 && dS[i] >= 3))) {
     if (carts.length >= mix.length) break;
     if (used.has(i) || cartBlocks.has(blockOf[i])) continue;
@@ -860,7 +892,7 @@ function say(n, text, secs) {
 
 function pickWander(n) {
   let target;
-  const seek = Math.min(.25 + level * .08, .65);
+  const seek = n.def.gus ? .6 : Math.min(.7 + level * .03, .85);
   if (Math.random() < seek) {
     // drift toward the player's neighborhood
     const near = walkList.filter(i => Math.abs(tileCenter(i).x - player.x) < 8 * T && Math.abs(tileCenter(i).y - player.y) < 6 * T);
@@ -873,19 +905,20 @@ function pickWander(n) {
 function stepNpc(n, dt) {
   n.t += dt; n.moving = false;
   if (n.taxiInv > 0) n.taxiInv -= dt;
+  if (n.gusCd > 0) n.gusCd -= dt;
   n.talkT -= dt; if (n.bubbleT > 0) n.bubbleT -= dt;
   if (n.talkT <= 0 && n.bubbleT <= 0) { say(n, pick(n.def.lines)); n.talkT = rand(3.5, 6.5); }
   if (n.stun > 0) { n.stun -= dt; return; }
   if (n.hold > 0) { n.hold -= dt; return; }
 
   const d = dist(n, player);
-  const sees = elapsed > 3 && d < n.sense && los(n, player);
+  const sees = elapsed > 3 && n.gusCd <= 0 && d < n.sense && los(n, player);
   if (sees) {
     if (n.state !== 'chase') { n.state = 'chase'; say(n, pick(n.def.spot), 1.8); n.talkT = rand(2.5, 4); banner(n.def.name + ' spotted you!', 1.6); }
     n.lost = 0;
   } else if (n.state === 'chase') {
     n.lost += dt;
-    if (n.lost > 4) { n.state = 'wander'; n.field = null; n.wp = null; }
+    if (n.lost > 6) { n.state = 'wander'; n.field = null; n.wp = null; }
   }
   if (n.state === 'chase') {
     n.pauseT -= dt;
@@ -943,7 +976,7 @@ function stepTaxis(dt) {
     }
     for (const n of npcs) if (n.taxiInv <= 0 && taxiTouches(tx, n)) {
       shove(tx, n); n.stun = 1.8; n.taxiInv = 1.5; n.wp = null;
-      say(n, pick(['My briefcase!', 'Ow! Still interested though!', 'I have a policy for this!']), 1.8);
+      say(n, pick(n.def.hit || ['My briefcase!', 'Ow! Still interested though!', 'I have a policy for this!']), 1.8);
       if (dist(n, player) < 9 * T) sndHonk();
       tx.bubble = pick(TAXI_LINES); tx.bubbleT = 1.6;
     }
@@ -959,7 +992,7 @@ function fart(big) {
   popMsg = big ? '*BRAAAP*' : pick(['*pfft*', '*pffrt*', '*toot*']); popT = 1.3;
   for (const n of npcs) if (n.stun <= 0 && dist(n, player) < (big ? 4 : 3) * T) {
     n.stun = big ? 2.4 : 1.6; n.state = 'wander'; n.field = null; n.wp = null; n.hold = 0;
-    say(n, pick(GROSS), 2);
+    say(n, pick(n.def.gross || GROSS), 2);
   }
 }
 
@@ -988,7 +1021,34 @@ function poop() {
   sndPoop(); puff(player.x, player.y - 6, 26);
   popMsg = '*SPLRRT*'; popT = 1.8;
   banner('Oh no.', 1.8, true);
-  for (const n of npcs) { n.stun = 5; say(n, pick(["...I'll let myself out.", 'We can circle back. Much later.']), 3); }
+  for (const n of npcs) { n.stun = 5; say(n, pick(n.def.poop || ["...I'll let myself out.", 'We can circle back. Much later.']), 3); }
+}
+
+function gusTalk(n) {
+  player.stun = 1.5; n.stun = 1.6; n.gusCd = 9; n.state = 'wander'; n.field = null; n.wp = null;
+  joy = null;
+  say(n, pick(n.def.lines), 2.6);
+  banner(pick(['Gus wants directions to the 99.', 'Gus is asking about Bud Lights.', "Gus won't let you leave."]), 1.8);
+}
+
+// Someone who's been off-screen for a while turns up just past the edge of the view and heads your way.
+function popUp(n, dt) {
+  const vw = W / Z, vh = H / Z, m = T * 1.5;
+  const onScreen = n.x > cam.x - m && n.x < cam.x + vw + m && n.y > cam.y - m && n.y < cam.y + vh + m;
+  if (onScreen || n.state === 'chase' || n.stun > 0) { n.offT = 0; return; }
+  n.offT += dt;
+  if (n.offT < n.popAfter) return;
+  n.offT = 0; n.popAfter = n.def.gus ? rand(12, 18) : rand(6, 10);
+  const opts = sideTiles.filter(i => {
+    const p = tileCenter(i);
+    const out = p.x < cam.x - T || p.x > cam.x + vw + T || p.y < cam.y - T || p.y > cam.y + vh + T;
+    const near = p.x > cam.x - 4 * T && p.x < cam.x + vw + 4 * T && p.y > cam.y - 4 * T && p.y < cam.y + vh + 4 * T;
+    return out && near && playerField[i] >= 6 && dist(p, tv) > 5 * T && npcs.every(o => o === n || dist(p, o) > 4 * T);
+  });
+  if (!opts.length) return;
+  const p = tileCenter(pick(opts));
+  n.x = p.x; n.y = p.y; n.wp = null; n.state = 'wander'; n.lost = 0;
+  n.field = bfs(tileIdx(player.x, player.y));
 }
 
 /* ---------- Input ---------- */
@@ -1135,11 +1195,16 @@ function update(dt) {
   stepTaxis(dt);
   for (const n of npcs) {
     stepNpc(n, dt);
-    if (state === 'play' && player.inv <= 0 && n.stun <= 0 && dist(n, player) < 26) { caught(n); return; }
+    popUp(n, dt);
+    if (n.stun > 0 || dist(n, player) >= 26) continue;
+    if (n.def.gus) { if (n.gusCd <= 0 && player.stun <= 0) gusTalk(n); }
+    else if (player.inv <= 0) { caught(n); return; }
   }
-  // keep the two from stacking on each other
-  const [a, b] = npcs, dd = dist(a, b);
-  if (dd < 22 && dd > .01) { const px = (a.x - b.x) / dd * .6, py = (a.y - b.y) / dd * .6; move(a, px, py); move(b, -px, -py); }
+  // keep everyone from stacking on each other
+  for (let i = 0; i < npcs.length; i++) for (let j = i + 1; j < npcs.length; j++) {
+    const a = npcs[i], b = npcs[j], dd = dist(a, b);
+    if (dd < 22 && dd > .01) { const px = (a.x - b.x) / dd * .6, py = (a.y - b.y) / dd * .6; move(a, px, py); move(b, -px, -py); }
+  }
   if (!hinted && elapsed > HINT_AFTER) { hinted = true; banner('Hint: follow the orange arrow', 2.5); }
   if (dist(player, tv) < 34) win();
   updateCam(dt);
@@ -1264,6 +1329,7 @@ function drawCast() {
   drawPortrait($('castYou'), LOOK_YOU, '#fbd9a8');
   drawPortrait($('castJack'), LOOK_JACK, JACK.bg);
   drawPortrait($('castPat'), LOOK_PAT, PAT.bg);
+  drawPortrait($('castGus'), LOOK_GUS, GUS.bg);
 }
 drawCast();
 document.fonts && document.fonts.ready.then(drawCast);
