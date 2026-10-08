@@ -51,10 +51,10 @@
   .card h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(32px, 10vw, 50px); line-height: 1.02; color: var(--pumpkin); -webkit-text-stroke: 2px var(--ink); text-shadow: 0 4px 0 var(--ink); text-align: center; }
   .card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.05; color: var(--ink); text-align: center; }
   .card .sub { margin: 0; text-align: center; font-size: 15px; font-weight: 900; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
-  .cast { display: flex; justify-content: center; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .cast { display: flex; justify-content: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
   .cast li { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; max-width: 120px; }
   .cast canvas { width: 100%; max-width: 100px; aspect-ratio: 1; border-radius: 14px; border: 2px solid var(--ink); }
-  .cast span { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); font-weight: 900; text-align: center; }
+  .cast span { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); font-weight: 900; text-align: center; }
   .how { margin: 0; font-size: 16px; line-height: 1.4; color: var(--muted); text-align: center; text-wrap: balance; font-weight: 700; }
   .how b { color: var(--ink); }
   .card button { align-self: center; font-family: var(--display); font-size: 22px; color: var(--ink); background: var(--pumpkin); border: 3px solid var(--ink); border-radius: 14px; padding: 8px 30px; cursor: pointer; box-shadow: 0 5px 0 var(--ink); }
@@ -92,8 +92,9 @@
       <li><canvas id="castJack" width="160" height="160"></canvas><span>Jack</span></li>
       <li><canvas id="castPat" width="160" height="160"></canvas><span>Pat</span></li>
       <li><canvas id="castGus" width="160" height="160"></canvas><span>Gus</span></li>
+      <li><canvas id="castJay" width="160" height="160"></canvas><span>Jay</span></li>
     </ul>
-    <p class="how">Somewhere in Manhattan is <b>your TV</b>, and October Road is about to start. Jack and Pat want <b>just 2 minutes of your time</b> to talk about computer software, so don't let them catch you. Gus just wants to know where the Bud Lights are and how to get to the 99, but he'll hold you up. Street food carts give you a speed boost, but go easy on the <b>street meat</b>. Drag anywhere to walk, or use the arrow keys or WASD. Watch out for cabs.</p>
+    <p class="how">Somewhere in Manhattan is <b>your TV</b>, and October Road is about to start. Jack and Pat want <b>just 2 minutes of your time</b> to talk about computer software, so don't let them catch you. Gus just wants to know where the Bud Lights are and how to get to the 99, and Jay won't stop talking about the M&A deals he's working on. Neither one costs you a heart, but they'll hold you up. Street food carts give you a speed boost, but go easy on the <b>street meat</b>. Drag anywhere to walk, or use the arrow keys or WASD. Watch out for cabs.</p>
     <button id="play" type="button">Play</button>
     <p class="small" id="bestLine"></p>
   </div>
@@ -166,6 +167,7 @@ const LOOK_POOP = Object.assign({}, LOOK_YOU, { stain: true });
 const LOOK_JACK = { skin: '#f6d0b1', freckles: true, hair: '#d2491c', hair2: '#9e3212', style: 'straight', top: '#22304d', suit: true, long: true, tie: '#c8341f', bottom: '#22304d', legs: '#22304d', shoes: '#141414', case: '#7a4a26', case2: '#4e2f17' };
 const LOOK_PAT = { skin: '#eabb92', hair: '#6e4528', hair2: '#4a2b16', style: 'wavy', top: '#565c66', suit: true, long: true, tie: '#2e6fd0', bottom: '#565c66', legs: '#565c66', shoes: '#2a1a10', case: '#1f1f22', case2: '#000' };
 const LOOK_GUS = { skin: '#f0c29c', hair: '#6b4423', style: 'cap', cap: '#0c2340', capLogo: '#bd3039', stubble: true, top: '#8b9099', boston: true, long: true, bottom: '#3d5a8a', legs: '#3d5a8a', shoes: '#f4f4f4' };
+const LOOK_JAY = { skin: '#f3c9a5', hair: '#ecc760', hair2: '#c9a03e', style: 'blonde', top: '#7fa8d8', buttondown: true, long: true, bottom: '#c9b48a', legs: '#c9b48a', shoes: '#6b3f22' };
 const VENDOR_LOOKS = [
   { skin: '#c99067', hair: '#1d1410', style: 'cap', cap: '#2b62b8', top: '#f4f4f0', apron: true, bottom: '#3a3a3a', legs: '#3a3a3a', shoes: '#222' },
   { skin: '#8d5a3b', hair: '#111', style: 'cap', cap: '#c0392b', top: '#f4f4f0', apron: true, bottom: '#2f3b4a', legs: '#2f3b4a', shoes: '#222', mustache: true },
@@ -212,7 +214,8 @@ const PAT = {
   release: ["Let's touch base later!", "I'll leave you my card!"]
 };
 const GUS = {
-  name: 'Gus', look: LOOK_GUS, color: '#bd3039', bg: '#d9e2ee', pitch: 160, gus: true,
+  name: 'Gus', look: LOOK_GUS, color: '#bd3039', bg: '#d9e2ee', pitch: 160, talker: true,
+  holdMsgs: ['Gus wants directions to the 99.', 'Gus is asking about Bud Lights.', "Gus won't let you leave."],
   lines: [
     'Yo, you seen any Bud Lights around here?',
     "Where's the 99? Wicked serious.",
@@ -228,6 +231,27 @@ const GUS = {
   gross: ['Wicked rank, guy!', 'Oh, come ON, dude!', "That's worse than the Pike at rush hour."],
   hit: ["I'm walkin' heah!", 'Watch it, pal!'],
   poop: ['Wicked gross, guy.', "...I'm gonna go find the 99."]
+};
+const JAY = {
+  name: 'Jay', look: LOOK_JAY, color: '#3d6fb0', bg: '#dbe8f6', pitch: 250, talker: true,
+  holdMsgs: ['Jay is telling you about his deal.', 'Jay is walking you through the cap table.', "Jay can't say who, but it's big."],
+  lines: [
+    "We're about to close a roll-up. Huge.",
+    "Can't say who, but it's a carve-out. Big carve-out.",
+    'The synergies on this deal are insane.',
+    "We're at LOI on a SaaS target. Can't talk about it.",
+    'Diligence is killing me. Three data rooms.',
+    "It's accretive in year one. Year ONE.",
+    'Banker says 12x EBITDA. I said 10. We\'ll see.',
+    "It's not hostile. Let's call it unsolicited.",
+    "I've been on a deal call since 6 a.m.",
+    "Can you keep a secret? We're acquiring... no, I can't say."
+  ],
+  spot: ['Hey! You gotta hear about this deal.', 'Yo! Got a sec? Quick deal update.'],
+  pause: ['Hold on, the bankers are calling.', 'One sec, redlining a term sheet.'],
+  gross: ['That is NOT accretive.', 'Woof. Deal breaker.'],
+  hit: ['Whoa! I have a closing tomorrow!', 'Watch it, I have a board call!'],
+  poop: ["I'll have my people call your people.", "That's a material adverse change."]
 };
 const GROSS = ["Whoa. Let's take this offline.", "I'll... circle back.", 'Is that... the cloud?', "I'll just email you!", 'Ugh! Not a good fit!'];
 const TAXI_LINES = ["HEY! I'M DRIVIN' HERE!", 'Watch it, pal!', 'Get outta the street!', 'Move it!'];
@@ -256,6 +280,14 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
     c.fillStyle = look.tie; c.beginPath(); c.moveTo(-1.6, -40); c.lineTo(1.6, -40); c.lineTo(2.4, -31); c.lineTo(0, -27.5); c.lineTo(-2.4, -31); c.closePath(); c.fill();
     c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-5.5, -41); c.lineTo(-1, -29); c.moveTo(5.5, -41); c.lineTo(1, -29); c.stroke();
     c.fillStyle = 'rgba(0,0,0,.35)'; circ(c, 0, -25.5, .9); c.fill();
+  }
+  if (look.buttondown) {
+    c.fillStyle = look.skin; c.beginPath(); c.moveTo(-3, -41); c.lineTo(3, -41); c.lineTo(0, -36.5); c.closePath(); c.fill();
+    c.fillStyle = '#6a93c6'; c.beginPath(); c.moveTo(-6.5, -41.5); c.lineTo(-1, -41); c.lineTo(-3.5, -36.5); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(6.5, -41.5); c.lineTo(1, -41); c.lineTo(3.5, -36.5); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(30,60,110,.45)'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -36.5); c.lineTo(0, -21); c.stroke();
+    c.fillStyle = '#fff'; for (const by of [-34, -30, -26]) { circ(c, 1.4, by, .8); c.fill(); }
+    c.fillStyle = 'rgba(30,60,110,.25)'; c.fillRect(4, -36, 4, 3.5);
   }
   if (look.boston) {
     c.fillStyle = 'rgba(0,0,0,.12)'; rr(c, -7, -30, 14, 6, 2); c.fill();
@@ -311,6 +343,12 @@ function drawPerson(c, x, y, look, t, moving, fx, s, talking) {
     c.strokeStyle = look.hair2; c.lineWidth = 1.3; c.beginPath();
     c.moveTo(-8.5, -60); c.quadraticCurveTo(-5.5, -63, -2.5, -60); c.quadraticCurveTo(0, -57.5, 2.5, -60); c.quadraticCurveTo(5.5, -63, 8.5, -60);
     c.moveTo(-5, -64.5); c.quadraticCurveTo(-2.5, -67, 0, -64.5); c.quadraticCurveTo(2.5, -62, 5, -64.5); c.stroke();
+  } else if (look.style === 'blonde') {
+    // short blonde hair swept up and to the side
+    c.beginPath(); c.moveTo(-11.8, -51.5); c.lineTo(-12, -53); c.arc(0, -53, 12, Math.PI, 0); c.lineTo(11.8, -51.5); c.lineTo(10.2, -52);
+    c.quadraticCurveTo(6, -59, -2, -57.5); c.quadraticCurveTo(-8, -56.5, -10, -52); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-9, -60); c.quadraticCurveTo(0, -70, 12, -62); c.quadraticCurveTo(4, -64, -9, -60); c.fill();
+    c.strokeStyle = look.hair2; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-6, -60); c.quadraticCurveTo(1, -65, 8, -61); c.moveTo(-8, -57); c.quadraticCurveTo(-1, -61, 5, -58); c.stroke();
   } else if (look.style === 'beanie') {
     rr(c, -12, -54, 24, 7, 3); c.fill();
     c.fillStyle = look.beanie; c.beginPath(); c.arc(0, -55, 12.3, Math.PI, 0); c.closePath(); c.fill();
@@ -806,7 +844,7 @@ const openSpot = i => !obstacles.some(o => Math.abs(o.x - i % GW) <= 1 && Math.a
 function makeNpc(def, tile, chase, wander, sense) {
   const p = tileCenter(tile);
   return { def, x: p.x, y: p.y, wp: null, field: null, state: 'wander', lost: 0, stun: 0, taxiInv: 0, pauseT: rand(5, 9), hold: 0,
-    talkT: rand(1, 4), bubble: '', bubbleT: 0, chase, wander, sense, t: rand(0, 5), moving: false, fx: 0, offT: 0, popAfter: rand(5, 9), gusCd: 0 };
+    talkT: rand(1, 4), bubble: '', bubbleT: 0, chase, wander, sense, t: rand(0, 5), moving: false, fx: 0, offT: 0, popAfter: rand(5, 9), holdCd: 0 };
 }
 
 function makeTaxis(n) {
@@ -847,15 +885,17 @@ function startLevel() {
   const pOpts = ring(12, 24).filter(i => dist(tileCenter(i), tileCenter(jTile)) > 8 * T);
   const patTile = pick(pOpts.length ? pOpts : jOpts.length ? jOpts : far);
   const gOpts = ring(7, 16).filter(i => i !== jTile && i !== patTile), gusTile = pick(gOpts.length ? gOpts : far);
+  const yOpts = ring(7, 18).filter(i => dist(tileCenter(i), tileCenter(gusTile)) > 8 * T && i !== jTile && i !== patTile), jayTile = pick(yOpts.length ? yOpts : far);
   const boost = Math.min(1.15, 1 + (level - 1) * .03);
   npcs = [
     makeNpc(JACK, jTile, 118 * boost, 88, 10 * T),
     makeNpc(PAT, patTile, 108 * boost, 80, 11 * T),
-    makeNpc(GUS, gusTile, 100, 72, 7 * T)
+    makeNpc(GUS, gusTile, 100, 72, 7 * T),
+    makeNpc(JAY, jayTile, 104, 78, 7 * T)
   ];
-  npcs[2].popAfter = rand(10, 16);
+  for (const n of npcs) if (n.def.talker) n.popAfter = rand(10, 16);
   sideTiles = tiles;
-  carts = []; const used = new Set([pTile, tvTile, jTile, patTile, gusTile]), cartBlocks = new Set(), mix = shuffle(CART_MIX.slice());
+  carts = []; const used = new Set([pTile, tvTile, jTile, patTile, gusTile, jayTile]), cartBlocks = new Set(), mix = shuffle(CART_MIX.slice());
   for (const i of shuffle(open.filter(i => dP[i] >= 4 && dS[i] >= 3))) {
     if (carts.length >= mix.length) break;
     if (used.has(i) || cartBlocks.has(blockOf[i])) continue;
@@ -891,7 +931,7 @@ function say(n, text, secs) {
 
 function pickWander(n) {
   let target;
-  const seek = n.def.gus ? .6 : Math.min(.7 + level * .03, .85);
+  const seek = n.def.talker ? .6 : Math.min(.7 + level * .03, .85);
   if (Math.random() < seek) {
     // drift toward the player's neighborhood
     const near = walkList.filter(i => Math.abs(tileCenter(i).x - player.x) < 8 * T && Math.abs(tileCenter(i).y - player.y) < 6 * T);
@@ -904,14 +944,14 @@ function pickWander(n) {
 function stepNpc(n, dt) {
   n.t += dt; n.moving = false;
   if (n.taxiInv > 0) n.taxiInv -= dt;
-  if (n.gusCd > 0) n.gusCd -= dt;
+  if (n.holdCd > 0) n.holdCd -= dt;
   n.talkT -= dt; if (n.bubbleT > 0) n.bubbleT -= dt;
   if (n.talkT <= 0 && n.bubbleT <= 0) { say(n, pick(n.def.lines)); n.talkT = rand(3.5, 6.5); }
   if (n.stun > 0) { n.stun -= dt; return; }
   if (n.hold > 0) { n.hold -= dt; return; }
 
   const d = dist(n, player);
-  const sees = elapsed > 3 && n.gusCd <= 0 && d < n.sense && los(n, player);
+  const sees = elapsed > 3 && n.holdCd <= 0 && d < n.sense && los(n, player);
   if (sees) {
     if (n.state !== 'chase') { n.state = 'chase'; say(n, pick(n.def.spot), 1.8); n.talkT = rand(2.5, 4); banner(n.def.name + ' spotted you!', 1.6); }
     n.lost = 0;
@@ -1023,11 +1063,12 @@ function poop() {
   for (const n of npcs) { n.stun = 5; say(n, pick(n.def.poop || ["...I'll let myself out.", 'We can circle back. Much later.']), 3); }
 }
 
-function gusTalk(n) {
-  player.stun = 1.5; n.stun = 1.6; n.gusCd = 9; n.state = 'wander'; n.field = null; n.wp = null;
+// Gus and Jay don't cost hearts; they just hold you up while they talk.
+function holdUp(n) {
+  player.stun = 1.5; n.stun = 1.6; n.holdCd = 9; n.state = 'wander'; n.field = null; n.wp = null;
   joy = null;
   say(n, pick(n.def.lines), 2.6);
-  banner(pick(['Gus wants directions to the 99.', 'Gus is asking about Bud Lights.', "Gus won't let you leave."]), 1.8);
+  banner(pick(n.def.holdMsgs), 1.8);
 }
 
 // Someone who's been off-screen for a while turns up just past the edge of the view and heads your way.
@@ -1037,7 +1078,7 @@ function popUp(n, dt) {
   if (onScreen || n.state === 'chase' || n.stun > 0) { n.offT = 0; return; }
   n.offT += dt;
   if (n.offT < n.popAfter) return;
-  n.offT = 0; n.popAfter = n.def.gus ? rand(12, 18) : rand(6, 10);
+  n.offT = 0; n.popAfter = n.def.talker ? rand(12, 18) : rand(6, 10);
   const opts = sideTiles.filter(i => {
     const p = tileCenter(i);
     const out = p.x < cam.x - T || p.x > cam.x + vw + T || p.y < cam.y - T || p.y > cam.y + vh + T;
@@ -1196,7 +1237,7 @@ function update(dt) {
     stepNpc(n, dt);
     popUp(n, dt);
     if (n.stun > 0 || dist(n, player) >= 26) continue;
-    if (n.def.gus) { if (n.gusCd <= 0 && player.stun <= 0) gusTalk(n); }
+    if (n.def.talker) { if (n.holdCd <= 0 && player.stun <= 0) holdUp(n); }
     else if (player.inv <= 0) { caught(n); return; }
   }
   // keep everyone from stacking on each other
@@ -1329,6 +1370,7 @@ function drawCast() {
   drawPortrait($('castJack'), LOOK_JACK, JACK.bg);
   drawPortrait($('castPat'), LOOK_PAT, PAT.bg);
   drawPortrait($('castGus'), LOOK_GUS, GUS.bg);
+  drawPortrait($('castJay'), LOOK_JAY, JAY.bg);
 }
 drawCast();
 document.fonts && document.fonts.ready.then(drawCast);
